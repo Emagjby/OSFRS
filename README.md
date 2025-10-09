@@ -53,7 +53,7 @@ The project aims to simplify booking and management of sports facilities in a st
 **Tools**:
 
 - Version control: Git, GitHub
-- Architecture & visualization: CodeSee
+- Architecture & visualization: XMind
 - Project management: Notion
 
 ---
