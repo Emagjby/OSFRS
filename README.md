@@ -48,7 +48,6 @@ The project aims to simplify booking and management of sports facilities in a st
 **Database**:
 
 - PostgreSQL 16: Stores user, reservation, and facility data
-- Prisma ORM: Simplifies database queries and schema management
 
 **Tools**:
 
