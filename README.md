@@ -1,26 +1,27 @@
-# OSFRS – Online Sports Facility Reservation System
+# **OSFRS – Online Sports Facility Reservation System**
 
-**OSFRS** is a school project aimed at managing bookings, users, and facilities efficiently. It allows users to reserve halls, courts, or equipment, while administrators can manage facilities and monitor usage. The system is designed to be expanded with additional features in the future.
+**OSFRS** is a school project focused on **efficient management of bookings, users, and sports facilities**. Users can reserve halls, courts, or equipment, while administrators can manage facilities, track usage, and generate reports and analytics. Built with a **headless backend for easy scalability and future feature expansion**.
 
 ---
 
 ## Table of Contents
 
-1. [Motivation](#motivation)
+1. [Description](#description)
 2. [Features](#features)
-3. [Tech Stack](#tech-stack)
-4. [System Overview](#system-overview)
-5. [Setup / Installation](#setup--installation)
-6. [Usage](#usage)
-7. [Future Work / Roadmap](#future-work--roadmap)
-8. [Documentation](#documentation)
-9. [License](#license)
+3. [Modules](#modules)
+4. [Tech Stack](#tech-stack)
+5. [System Overview](#system-overview)
+6. [Setup / Installation](#setup--installation)
+7. [Usage](#usage)
+8. [Roadmap / Future Work](#roadmap--future-work)
+9. [Documentation](#documentation)
+10. [License](#license)
 
 ---
 
-## Motivation
+## Description
 
-The project aims to simplify booking and management of sports facilities in a structured and efficient way, providing clear roles for users and administrators.
+OSFRS is designed to manage bookings, users, and sports facilities efficiently. The system allows users to reserve halls, courts, or equipment, while administrators can manage facilities, monitor usage, and generate statistics. The architecture supports future scalability and expansion.
 
 ---
 
@@ -31,65 +32,88 @@ The project aims to simplify booking and management of sports facilities in a st
 - Automatic blocking of occupied time slots
 - Facility management by administrators
 - Generation of usage statistics
+- Scalable and expandable backend architecture
+
+---
+
+## Modules
+
+### Base Modules
+
+- **User Management** – Handles registration, login, profiles, and roles
+- **Reservations** – Bookings, calendar, time blocking
+- **Facility Management** – Admin operations, facility availability
+- **Statistics** – Usage reports, analytics
+
+### Future Modules
+
+- **Notifications** – Email / SMS / in-app confirmations
+- **Map / Geolocation** – Show facility locations
+- **Admin Dashboard** – System overview and pending tasks
 
 ---
 
 ## Tech Stack
 
-**Frontend** (User Interface):
+**Frontend (User Interface):**
 
-- PHP 8: Handles web pages and server-side rendering of UI
-- HTML/CSS/JavaScript: Structure, styling, and interactive elements
+- PHP 8: Web pages and server-side rendering of UI
+- HTML/CSS/JavaScript: Structure, styling, and interactivity
 
-**Backend** (Server & Business Logic):
+**Backend (Server & Business Logic):**
 
-- ASP.NET 7: Handles API endpoints, business logic, and authentication
+- ASP.NET 7: API endpoints, business logic, authentication
+- Headless backend design for modular expansion
 
-**Database**:
+**Database:**
 
 - PostgreSQL 16: Stores user, reservation, and facility data
 
-**Tools**:
+**Tools:**
 
 - Version control: Git, GitHub
-- Architecture & visualization: XMind
+- Architecture & visualization: XMind, Miro
 - Project management: Notion
 
 ---
 
 ## System Overview
 
-- High-level architecture and modules can be found in `docs/architecture.md`
 - Major modules: User Management, Reservations, Facility Management, Statistics
+- High-level architecture: see `docs/architecture.md`
+- Fully modular design to support expansion and headless backend integration
 
 ---
 
 ## Setup / Installation
 
-_To add..._
+_To be added_
 
 ---
 
 ## Usage
 
-_To add..._
+_To be added_
 
 ---
 
-## Future Work / Roadmap
+## Roadmap / Future Work
 
 - Add notifications and email confirmations
 - Expand analytics and reporting
 - Implement mobile-friendly interface
-- Map showing the locations, so the user can find the facilities closest to him
+- Add map showing facility locations
+- Extend admin dashboard with system overview and pending tasks
 
 ---
 
 ## Documentation
 
-- Mind maps and diagrams: `docs/mindmaps/`
-- Original assignment: `docs/assignment.md`
-- Detailed requirements: `docs/requirements.md`
+- Architecture diagrams and module breakdowns: `docs/architecture.md`
+- Mind maps: `docs/mindmaps/`
+- Database design: `docs/database.md`
+- Frontend flow and pages: `docs/frontend_flow.md`
+- Assignment and detailed requirements: `docs/assignment.md`
 
 ---
 
