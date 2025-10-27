@@ -26,21 +26,34 @@ public class UserRepository
     }
 
     // Get user by username
-    public async Task<User?> GetByUsername(string username)
+    public async Task<User?> GetByUsernameAsync(string username)
     {
         return await _context.Users.FirstOrDefaultAsync(user => user.Username == username);
     }
 
     // Get user by username or email
-    public async Task <User?> GetByUsernameOrEmail(string usernameOrEmail)
+    public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail)
     {
         return await _context.Users.FirstOrDefaultAsync(user => user.Username == usernameOrEmail || user.Email == usernameOrEmail);
+    }
+    
+    // Get user by ID
+    public async Task<User?> GetByIdAsync(int id)
+    {
+        return await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
     }
 
     // Add new user
     public async Task AddUserAsync(User user)
     {
         _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+    }
+
+    // Update user
+    public async Task UpdateUserAsync(User user)
+    {
+        _context.Users.Update(user);
         await _context.SaveChangesAsync();
     }
 

@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Validators;
 

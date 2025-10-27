@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using OSFRS.Backend.DTOs;
 using OSFRS.Backend.Helpers;
 using OSFRS.Backend.Repositories;
@@ -28,7 +27,7 @@ public class AuthService
         if (!UserValidator.ValidatePassword(dto.Password)) throw new ArgumentException("Invalid password.");
 
         // Fetch user
-        User? user = await _userRepository.GetByUsernameOrEmail(dto.UsernameOrEmail);
+        User? user = await _userRepository.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
         if (user == null) throw new Exception("Invalid credentials.");
 
         // Compare password
