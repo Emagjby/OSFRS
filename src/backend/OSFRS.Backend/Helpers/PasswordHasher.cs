@@ -1,6 +1,8 @@
+using OSFRS.Backend.Interfaces;
+
 namespace OSFRS.Backend.Helpers;
 
-public class PasswordHasher
+public class PasswordHasher : IPasswordHasher
 {
     public string Hash(string password)
     {

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSFRS.Backend", "OSFRS.Back
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSFRS.Models", "OSFRS.Models\OSFRS.Models.csproj", "{E187FB72-120A-455C-AC83-949396BBE800}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSFRS.Tests", "OSFRS.Tests\OSFRS.Tests.csproj", "{591156BD-A203-4C90-8696-0A036C02E538}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{E187FB72-120A-455C-AC83-949396BBE800}.Release|x64.Build.0 = Release|Any CPU
 		{E187FB72-120A-455C-AC83-949396BBE800}.Release|x86.ActiveCfg = Release|Any CPU
 		{E187FB72-120A-455C-AC83-949396BBE800}.Release|x86.Build.0 = Release|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Debug|x64.Build.0 = Debug|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Debug|x86.Build.0 = Debug|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Release|Any CPU.Build.0 = Release|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Release|x64.ActiveCfg = Release|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Release|x64.Build.0 = Release|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Release|x86.ActiveCfg = Release|Any CPU
+		{591156BD-A203-4C90-8696-0A036C02E538}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

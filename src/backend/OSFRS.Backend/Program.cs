@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using System.Text;
+using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Helpers.Logging;
 
 Env.Load();
 
@@ -17,8 +19,11 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-builder.Services.AddDbContext<OSFRSDbContext>(options =>
-    options.UseNpgsql(Environment.GetEnvironmentVariable("OSFRS_DB_CONN")));
+if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddDbContext<OSFRSDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // Dependency Injection
 builder.Services.AddScoped<UserRepository>();
@@ -27,6 +32,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<JwtTokenGenerator>();
+builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Controllers
 builder.Services.AddControllers();
@@ -64,3 +70,5 @@ app.MapControllers();
 app.MapGet("/", () => "API is running!");
 
 app.Run();
+
+public partial class Program { }

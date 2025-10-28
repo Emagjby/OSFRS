@@ -6,16 +6,17 @@ using System.Text;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using OSFRS.Models.Entities;
+using OSFRS.Backend.Interfaces;
 
 
 namespace OSFRS.Backend.Helpers;
 
-public class JwtTokenGenerator
+public class JwtTokenGenerator : IJwtTokenGenerator
 {
     private readonly string _secret;
     private readonly string _issuer;
     private readonly string _audience;
-    private readonly int _expiryMinutes;
+    private readonly int _defaultExpiryMinutes;
 
     public JwtTokenGenerator()
     {
@@ -27,10 +28,10 @@ public class JwtTokenGenerator
         _audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
             ?? throw new Exception("JWT_AUDIENCE not set.");
 
-        _expiryMinutes = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRY_MINUTES"), out int exp) ? exp : 60;
+        _defaultExpiryMinutes = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRY_MINUTES"), out int exp) ? exp : 60;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(User user, int? expiryInMinutes = null)
     {
         Claim[] claims = [
             new Claim(JwtClaimNames.Sub, user.Id.ToString()),
@@ -43,11 +44,13 @@ public class JwtTokenGenerator
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        var expiryMinutes = expiryInMinutes ?? _defaultExpiryMinutes;
+
         var token = new JwtSecurityToken(
             issuer: _issuer,
             audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_expiryMinutes),
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
             signingCredentials: creds
         );
 

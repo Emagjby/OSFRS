@@ -23,4 +23,8 @@
     <ProjectReference Include="..\OSFRS.Models\OSFRS.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="OSFRS.Tests" />
+  </ItemGroup>
+
 </Project>
