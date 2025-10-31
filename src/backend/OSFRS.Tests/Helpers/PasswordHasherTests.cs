@@ -1,10 +1,11 @@
 using OSFRS.Backend.Helpers;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Tests.Helpers;
 
 public class PasswordHasherTests
 {
-    private readonly PasswordHasher _passwordHasher;
+    private readonly IPasswordHasher _passwordHasher;
 
     public PasswordHasherTests()
     {

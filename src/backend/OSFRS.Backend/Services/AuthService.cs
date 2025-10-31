@@ -10,12 +10,12 @@ namespace OSFRS.Backend.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly UserRepository _userRepository;
-    private readonly PasswordHasher _passwordHasher;
-    private readonly JwtTokenGenerator _jwtGenerator;
+    private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly IJwtTokenGenerator _jwtGenerator;
     private readonly IAppLogger<AuthService> _logger;
 
-    public AuthService(UserRepository userRepository, PasswordHasher passwordHasher, JwtTokenGenerator jwtGenerator, IAppLogger<AuthService> logger)
+    public AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher, IJwtTokenGenerator jwtGenerator, IAppLogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;

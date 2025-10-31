@@ -3,6 +3,7 @@ using Moq;
 using OSFRS.Backend.Data;
 using OSFRS.Backend.Helpers;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Repositories;
 using OSFRS.Backend.Services;
 using OSFRS.Backend.DTOs;
@@ -12,10 +13,10 @@ namespace OSFRS.Tests.Services;
 public class UserServiceTests
 {
     private readonly OSFRSDbContext _context;
-    private readonly UserRepository _repo;
-    private readonly PasswordHasher _hasher;
+    private readonly IUserRepository _repo;
+    private readonly IPasswordHasher _hasher;
     private readonly Mock<IAppLogger<UserService>> _mockLogger;
-    private readonly UserService _service;
+    private readonly IUserService _service;
 
     public UserServiceTests()
     {

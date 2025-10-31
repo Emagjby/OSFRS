@@ -7,17 +7,18 @@ using OSFRS.Backend.Services;
 using OSFRS.Backend.DTOs;
 using OSFRS.Models.Entities;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Tests.Services;
 
 public class AuthServiceTests
 {
     private readonly OSFRSDbContext _context;
-    private readonly UserRepository _repo;
-    private readonly PasswordHasher _hasher;
-    private readonly JwtTokenGenerator _jwtGenerator;
+    private readonly IUserRepository _repo;
+    private readonly IPasswordHasher _hasher;
+    private readonly IJwtTokenGenerator _jwtGenerator;
     private readonly Mock<IAppLogger<AuthService>> _mockLogger;
-    private readonly AuthService _service;
+    private readonly IAuthService _service;
 
     public AuthServiceTests()
     {

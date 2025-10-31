@@ -9,11 +9,11 @@ namespace OSFRS.Backend.Services;
 
 public class ProfileService : IProfileService
 {
-    private readonly UserRepository _userRepository;
-    private readonly PasswordHasher _passwordHasher;
+    private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly IAppLogger<ProfileService> _logger;
 
-    public ProfileService(UserRepository userRepository, PasswordHasher passwordHasher, IAppLogger<ProfileService> logger)
+    public ProfileService(IUserRepository userRepository, IPasswordHasher passwordHasher, IAppLogger<ProfileService> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;

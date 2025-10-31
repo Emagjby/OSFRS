@@ -71,4 +71,50 @@ public class ReservationRepository : IReservationRepository
         await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation {ReservationId} updated.", reservation.Id);
     }
+
+    public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null)
+    {
+        var query = _context.Reservations.AsQueryable();
+
+        query = query.Where(reservation => reservation.FacilityId == facilityId);
+
+        if (start.HasValue)
+        {
+            query = query.Where(reservation => reservation.StartTime >= start);
+        }
+
+        if (end.HasValue)
+        {
+            query = query.Where(reservation => reservation.EndTime <= end);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<IEnumerable<Reservation>> SearchAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null)
+    {
+        var query = _context.Reservations.AsQueryable();
+
+        if (userId.HasValue)
+        {
+            query = query.Where(reservation => reservation.UserId == userId);
+        }
+
+        if (facilityId.HasValue)
+        {
+            query = query.Where(reservation => reservation.FacilityId == facilityId);
+        }
+
+        if (start.HasValue)
+        {
+            query = query.Where(reservation => reservation.StartTime >= start);
+        }
+
+        if (end.HasValue)
+        {
+            query = query.Where(reservation => reservation.EndTime <= end);
+        }
+
+        return await query.ToListAsync();
+    }
 }

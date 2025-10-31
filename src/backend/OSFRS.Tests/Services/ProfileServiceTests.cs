@@ -7,16 +7,17 @@ using OSFRS.Backend.DTOs;
 using OSFRS.Models.Entities;
 using Moq;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Tests.Services;
 
 public class ProfileServiceTests
 {
     private readonly OSFRSDbContext _context;
-    private readonly UserRepository _repo;
-    private readonly PasswordHasher _hasher;
+    private readonly IUserRepository _repo;
+    private readonly IPasswordHasher _hasher;
     private readonly Mock<IAppLogger<ProfileService>> _mockLogger;
-    private readonly ProfileService _service;
+    private readonly IProfileService _service;
 
     public ProfileServiceTests()
     {

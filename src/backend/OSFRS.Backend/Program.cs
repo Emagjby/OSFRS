@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using System.Text;
+using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
+using OSFRS.Models.Entities;
 
 Env.Load();
 
@@ -26,12 +28,14 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
 }
 
 // Dependency Injection
-builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<ProfileService>();
-builder.Services.AddScoped<PasswordHasher>();
-builder.Services.AddScoped<JwtTokenGenerator>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Controllers

@@ -10,11 +10,11 @@ namespace OSFRS.Backend.Services;
 
 public class UserService : IUserService
 {
-    private readonly UserRepository _userRepository;
-    private readonly PasswordHasher _passwordHasher;
+    private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly IAppLogger<UserService> _logger;
 
-    public UserService(UserRepository userRepository, PasswordHasher passwordHasher, IAppLogger<UserService> logger)
+    public UserService(IUserRepository userRepository, IPasswordHasher passwordHasher, IAppLogger<UserService> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;

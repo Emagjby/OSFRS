@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using OSFRS.Backend.Services;
 using OSFRS.Backend.DTOs;
 using OSFRS.Models.Entities;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -9,9 +10,9 @@ namespace OSFRS.Backend.Controllers;
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    private readonly UserService _userService;
+    private readonly IUserService _userService;
 
-    public UserController(UserService userService)
+    public UserController(IUserService userService)
     {
         _userService = userService;
     }

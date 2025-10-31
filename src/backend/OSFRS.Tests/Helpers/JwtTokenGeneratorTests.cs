@@ -4,12 +4,13 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using OSFRS.Backend.Helpers;
 using OSFRS.Models.Entities;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Tests.Helpers;
 
 public class JwtTokenGeneratorTests
 {
-    private readonly JwtTokenGenerator _jwtTokenGenerator;
+    private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly string _secret = "Xo8pCrcllE87HPhyaBbR6bo2gN0gh/obKNGBhVb1r1U=";
 
     public JwtTokenGeneratorTests()

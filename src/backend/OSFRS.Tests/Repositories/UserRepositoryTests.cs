@@ -1,6 +1,7 @@
 using OSFRS.Backend.Data;
 using OSFRS.Backend.Repositories;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces;
 using OSFRS.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -11,7 +12,7 @@ public class UserRepositoryTests
 {
     private readonly OSFRSDbContext _context;
     private readonly Mock<IAppLogger<UserRepository>> _mockLogger;
-    private readonly UserRepository _repo;
+    private readonly IUserRepository _repo;
 
     public UserRepositoryTests()
     {

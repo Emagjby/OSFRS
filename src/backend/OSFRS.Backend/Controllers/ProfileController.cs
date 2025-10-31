@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using OSFRS.Backend.Services;
 using OSFRS.Backend.DTOs;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -12,9 +13,9 @@ namespace OSFRS.Backend.Controllers;
 [Authorize]
 public class ProfileController : ControllerBase
 {
-    private readonly ProfileService _profileService;
+    private readonly IProfileService _profileService;
 
-    public ProfileController(ProfileService profileService)
+    public ProfileController(IProfileService profileService)
     {
         _profileService = profileService;
     }
