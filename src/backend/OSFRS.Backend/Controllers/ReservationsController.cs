@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using OSFRS.Backend.DTOs;
 using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Validators;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -22,7 +24,7 @@ public class ReservationsController : ControllerBase
     {
         try
         {
-            if (facilityId <= 0) return BadRequest("Invalid facility ID.");
+            if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
 
             var calendar = await _reservationService.GetAvailabilityCalendarAsync(facilityId, date);
             if (!calendar.Any())
@@ -45,7 +47,7 @@ public class ReservationsController : ControllerBase
     {
         try
         {
-            if (facilityId <= 0) return BadRequest("Invalid facility ID.");
+            if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
 
             var reservations = await _reservationService.GetReservationsAsync(facilityId, start, end);
             return Ok(reservations);
@@ -53,7 +55,7 @@ public class ReservationsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving reservations for facility {FacilityId}", facilityId);
-            return StatusCode(500, "Internal server error while fetching availability.");
+            return StatusCode(500, "Internal server error while fetching reservation.");
         }
     }
 
@@ -70,10 +72,33 @@ public class ReservationsController : ControllerBase
             var results = await _reservationService.SearchReservationAsync(userId, facilityId, start, end);
             return Ok(results);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error searching reservations.");
             return StatusCode(500, "Internal server error while searching reservations.");
+        }
+    }
+
+    [HttpPost("create")]
+    public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
+    {
+        try
+        {
+            var reservation = await _reservationService.CreateReservationAsync(dto);
+            return Ok(reservation);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error creating reservation.");
+            return StatusCode(500, "Internal server error while creating reservation.");
         }
     }
 }

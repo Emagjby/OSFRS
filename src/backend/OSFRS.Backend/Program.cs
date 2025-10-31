@@ -23,8 +23,12 @@ builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
 {
+    var connString = Environment.GetEnvironmentVariable("OSFRS_DB_CONN");
+    if (string.IsNullOrWhiteSpace(connString))
+        throw new Exception("Database connection string not found in envvars");
+
     builder.Services.AddDbContext<OSFRSDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(connString)); 
 }
 
 // Dependency Injection

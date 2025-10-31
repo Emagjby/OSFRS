@@ -60,9 +60,15 @@ public class ReservationRepository : IReservationRepository
             .FirstOrDefaultAsync(reservation => reservation.Id == id);
     }
 
-    public Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId)
+    public async Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId)
     {
-        throw new NotImplementedException();
+        return !await _context.Reservations
+            .AnyAsync(reservation =>
+                reservation.FacilityId == facilityId &&
+                ((start >= reservation.StartTime && start < reservation.EndTime) ||
+                 (end > reservation.StartTime && end <= reservation.EndTime) ||
+                 (start <= reservation.StartTime && end >= reservation.EndTime))
+            );
     }
 
     public async Task UpdateAsync(Reservation reservation)
