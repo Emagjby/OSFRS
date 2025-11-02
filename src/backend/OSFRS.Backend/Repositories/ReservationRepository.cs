@@ -123,4 +123,20 @@ public class ReservationRepository : IReservationRepository
 
         return await query.ToListAsync();
     }
+
+    public async Task UpdateStatusAsync(int id, string status)
+    {
+        var reservation = await _context.Reservations.FindAsync(id);
+        if (reservation == null)
+        {
+            _logger.LogWarning("Attempted to update status for non-existant reservation {ReservationId}", id);
+            throw new InvalidOperationException("Reservation not found.");
+        }
+
+        reservation.Status = status;
+        reservation.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);
+    }
 }

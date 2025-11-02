@@ -103,4 +103,77 @@ public class ReservationService : IReservationService
 
         return reservation;
     }
+
+    public async Task<Reservation> UpdateReservationAsync(int id, UpdateReservationDto dto, int userId)
+    {
+        try
+        {
+            var reservation = await _repo.GetReservationByIdAsync(id);
+            if (reservation == null)
+            {
+                _logger.LogWarning("User {UserId} attempted to update non-existant reservation {ReservationId}", userId, id);
+                throw new InvalidOperationException("Reservation not found.");
+            }
+
+            if (reservation.UserId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to update reservation {ReservationId} without permission", userId, id);
+                throw new UnauthorizedAccessException("You do not have permission to update this reservation.");
+            }
+
+            if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime)) throw new ArgumentException("Invalid time range for reservation.");
+
+            var isAvailable = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, reservation.FacilityId);
+            if (!isAvailable) throw new InvalidOperationException("The selected time slot is already taken.");
+
+            reservation.StartTime = dto.StartTime;
+            reservation.EndTime = dto.EndTime;
+            reservation.Status = dto.Status ?? reservation.Status;
+            reservation.UpdatedAt = DateTime.UtcNow;
+
+            await _repo.UpdateAsync(reservation);
+            _logger.LogInformation("User {UserId} updated reservation {ReservationId}", userId, id);
+
+            return reservation;
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error updating reservation {ReservationId} by user {UserId}", id, userId);
+            throw;
+        }
+    }
+
+    public async Task CancelReservationAsync(int id, int userId)
+    {
+        try
+        {
+            var reservation = await _repo.GetReservationByIdAsync(id);
+            if (reservation == null)
+            {
+                _logger.LogWarning("User {UserId} attempted to cancel non-existant reservation {ReservationId}", userId, id);
+                throw new InvalidOperationException("Reservation not found.");
+            }
+
+            if (reservation.UserId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to cancel reservation {ReservationId} without permission", userId, id);
+                throw new UnauthorizedAccessException("You do not have permission to cancel this reservation.");
+            }
+
+            if (reservation.Status == "Canceled")
+            {
+                _logger.LogWarning("Reservation {ReservationId} is already canceled.", id);
+                throw new InvalidOperationException("This reservation is already canceled.");
+            }
+
+            await _repo.UpdateStatusAsync(id, "Canceled");
+
+            _logger.LogInformation("User {UserId} successfully canceled reservation {ReservationId}", userId, id);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling reservation {ReservationId} by user {UserId}", id, userId);
+            throw;
+        }
+    }
 }

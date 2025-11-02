@@ -9,4 +9,6 @@ public interface IReservationService
     Task<IEnumerable<AvailabilitySlotDto>> GetAvailabilityCalendarAsync(int facilityId, DateTime? date = null);
     Task<IEnumerable<Reservation>> SearchReservationAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null);
     Task<Reservation> CreateReservationAsync(CreateReservationDto dto);
+    Task<Reservation> UpdateReservationAsync(int id, UpdateReservationDto dto, int userId);
+    Task CancelReservationAsync(int id, int userId);
 }

@@ -9,6 +9,7 @@ public interface IReservationRepository
     Task<IEnumerable<Reservation>> GetAllAsync();
     Task AddAsync(Reservation reservation);
     Task UpdateAsync(Reservation reservation);
+    Task UpdateStatusAsync(int id, string status);
     Task DeleteAsync(int id);
     Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId);
     Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null);

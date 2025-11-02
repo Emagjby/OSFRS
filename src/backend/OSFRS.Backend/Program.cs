@@ -33,7 +33,6 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
 
 // Dependency Injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();

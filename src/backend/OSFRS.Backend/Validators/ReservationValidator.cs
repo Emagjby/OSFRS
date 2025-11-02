@@ -1,4 +1,5 @@
 using System;
+using OSFRS.Backend.DTOs;
 
 namespace OSFRS.Backend.Validators;
 
@@ -12,4 +13,24 @@ public static class ReservationValidator
 
     public static bool ValidateUserId(int userId) =>
         userId > 0;
+
+    public static bool ValidateReservationId(int id) =>
+        id > 0;
+
+    public static bool ValidateUpdate(UpdateReservationDto dto)
+    {
+        if (dto == null) return false;
+
+        bool hasAnyChange =
+            dto.StartTime != default ||
+            dto.EndTime != default ||
+            !string.IsNullOrWhiteSpace(dto.Status);
+
+        if (!hasAnyChange) return false;
+
+        if (dto.StartTime != default && dto.EndTime != default && dto.StartTime >= dto.EndTime)
+            return false;
+
+        return true;
+    }
 }

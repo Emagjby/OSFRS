@@ -3,6 +3,8 @@ using OSFRS.Backend.DTOs;
 using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Validators;
+using OSFRS.Backend.Helpers.Auth;
+using Microsoft.AspNetCore.Authorization;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -80,10 +82,16 @@ public class ReservationsController : ControllerBase
     }
 
     [HttpPost("create")]
+    [Authorize]
     public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
     {
         try
         {
+            var userId = UserContextHelper.GetUserId(User);
+            if (userId == null) return Unauthorized("User ID not found in token.");
+
+            dto.UserId = userId.Value;
+
             var reservation = await _reservationService.CreateReservationAsync(dto);
             return Ok(reservation);
         }
@@ -95,10 +103,72 @@ public class ReservationsController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error creating reservation.");
             return StatusCode(500, "Internal server error while creating reservation.");
+        }
+    }
+
+    [HttpPut("update/{id}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationDto dto)
+    {
+        try
+        {
+            if (!ReservationValidator.ValidateUpdate(dto)) return BadRequest("Invalid reservation update data.");
+
+            var userId = UserContextHelper.GetUserId(User);
+            if (userId == null) return Unauthorized("User ID not found in token.");
+
+            var updatedReservation = await _reservationService.UpdateReservationAsync(id, dto, userId.Value);
+            return Ok(updatedReservation);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error updating reservation {ReservationId}", id);
+            return StatusCode(500, "Internal server error while updating reservation.");
+        }
+    }
+
+    [HttpDelete("cancel/{id}")]
+    [Authorize]
+    public async Task<IActionResult> CancelReservation(int id)
+    {
+        try
+        {
+            if (!ReservationValidator.ValidateReservationId(id)) return BadRequest("Invalid reservation ID.");
+
+            var userId = UserContextHelper.GetUserId(User);
+            if (userId == null) return Unauthorized("User ID not found in token.");
+
+            await _reservationService.CancelReservationAsync(id, userId.Value);
+            return Ok(new { message = "Reservation cancelled successfully." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error cancelling reservation {ReservationId}", id);
+            return StatusCode(500, "Internal server error while cancelling reservation.");
         }
     }
 }
