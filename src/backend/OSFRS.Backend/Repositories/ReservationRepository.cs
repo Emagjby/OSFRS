@@ -139,4 +139,24 @@ public class ReservationRepository : IReservationRepository
         await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);
     }
+
+    public async Task<bool> HasConflictAsync(int facilityId, DateTime start, DateTime end, int excludeReservationId)
+    {
+        var conflictExists = await _context.Reservations.AnyAsync(reservation =>
+            reservation.FacilityId == facilityId &&
+            reservation.Id != excludeReservationId &&
+            (
+                (start >= reservation.StartTime && start < reservation.EndTime) ||
+                (end > reservation.StartTime && end <= reservation.EndTime) ||
+                (start <= reservation.StartTime && end >= reservation.EndTime)
+            )
+        );
+
+        if (conflictExists)
+        {
+            _logger.LogWarning("Conflict detected for facility {FacilityId} between {Start} and {End}.", facilityId, start, end);
+        }
+
+        return conflictExists;
+    }
 }

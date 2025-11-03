@@ -121,7 +121,8 @@ public class ReservationService : IReservationService
                 throw new UnauthorizedAccessException("You do not have permission to update this reservation.");
             }
 
-            if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime)) throw new ArgumentException("Invalid time range for reservation.");
+            if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime)) 
+                throw new ArgumentException("Invalid time range for reservation.");
 
             var isAvailable = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, reservation.FacilityId);
             if (!isAvailable) throw new InvalidOperationException("The selected time slot is already taken.");
@@ -173,6 +174,79 @@ public class ReservationService : IReservationService
         catch(Exception ex)
         {
             _logger.LogError(ex, "Error cancelling reservation {ReservationId} by user {UserId}", id, userId);
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<Reservation>> GetAllReservationsAsync()
+    {
+        try
+        {
+            var reservations = await _repo.GetAllAsync();
+            _logger.LogInformation("Admin fetched all {Count} reservations.", reservations.Count());
+            return reservations;
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching all reservations (admin).");
+            throw;
+        }
+    }
+
+    public async Task DeleteReservationAsync(int id, int adminId)
+    {
+        try
+        {
+            var reservation = await _repo.GetReservationByIdAsync(id);
+            if (reservation == null)
+            {
+                _logger.LogWarning("Admin {AdminId} attempted to delete a non-existant reservation {ReservationId}", adminId, id);
+                throw new InvalidOperationException("Reservation not found.");
+            }
+
+            await _repo.DeleteAsync(id);
+            _logger.LogInformation("Admin {AdminId} deleted reservation {ReservationId}", adminId, id);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting reservation {ReservationId} by admin {AdminId}", id, adminId);
+            throw;
+        }
+    }
+
+    public async Task<Reservation> AdminUpdateReservationAsync(int id, UpdateReservationDto dto, int adminId)
+    {
+        try
+        {
+            var reservation = await _repo.GetReservationByIdAsync(id);
+            if (reservation == null)
+            {
+                _logger.LogWarning("Admin {AdminId} attempted to update a non-existant reservation {ReservationId}", adminId, id);
+                throw new InvalidOperationException("Reservation not found.");
+            }
+
+            if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime))
+                throw new ArgumentException("Invalid time range for reservation.");
+
+            bool hasConflict = await _repo.HasConflictAsync(reservation.FacilityId, dto.StartTime, dto.EndTime, id);
+            if (hasConflict)
+            {
+                _logger.LogWarning("Admin {AdminId} is overriding a conflict while updating reservation {ReservationId}", adminId, id);
+            }
+
+            reservation.StartTime = dto.StartTime;
+            reservation.EndTime = dto.EndTime;
+            reservation.Status = dto.Status ?? reservation.Status;
+            reservation.UpdatedAt = DateTime.UtcNow;
+
+            await _repo.UpdateAsync(reservation);
+            _logger.LogInformation("Admin {AdminId} updated reservation {ReservationId}", adminId, id);
+
+            return reservation;
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error updating reservation {ReservationId} by admin {AdminId}.", id, adminId);
             throw;
         }
     }

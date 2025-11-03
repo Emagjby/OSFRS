@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using OSFRS.Backend.Interfaces.Logging;
 
 namespace OSFRS.Backend.Helpers.Logging;

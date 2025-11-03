@@ -14,4 +14,5 @@ public interface IReservationRepository
     Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId);
     Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null);
     Task<IEnumerable<Reservation>> SearchAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null);
+    Task<bool> HasConflictAsync(int facilityId, DateTime start, DateTime end, int excludeReservationId);
 }
