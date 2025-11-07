@@ -197,4 +197,6 @@ public class ProfileServiceTests
 
         Assert.True(_hasher.Verify("NewPass123", updated!.PasswordHash));
     }
+
+    
 }

@@ -15,10 +15,6 @@ public class ProfileControllerIntegrationTests : IClassFixture<TestApplicationFa
     public ProfileControllerIntegrationTests(TestApplicationFactory factory)
     {
         _client = factory.CreateClient();
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<OSFRSDbContext>();
-        db.Database.EnsureDeleted();
-        db.Database.EnsureCreated();
     }
 
     // Utility: registers and logs in, returns JWT token
@@ -33,7 +29,7 @@ public class ProfileControllerIntegrationTests : IClassFixture<TestApplicationFa
         };
 
         // Register
-        var registerResponse = await _client.PostAsJsonAsync("/api/user/register", registerDto);
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerDto);
         var registerBody = await registerResponse.Content.ReadAsStringAsync();
         Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 

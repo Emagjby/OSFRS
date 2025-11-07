@@ -15,6 +15,48 @@ public class AuthControllerIntegrationTests : IClassFixture<TestApplicationFacto
         _client = factory.CreateClient();
     }
 
+    // === Registration ===
+
+    [Fact]
+    public async Task ShouldReturnOk_WhenUserIsCreated()
+    {
+        var dto = new UserRegistrationDto
+        {
+            Name = "John Doe",
+            Username = $"john_integration_{Guid.NewGuid():N}".Substring(0, 16),
+            Email = $"john_{Guid.NewGuid():N}@example.com",
+            Password = "StrongPass123!"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/auth/register", dto);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("User registered successfully", content);
+    }
+
+    [Fact]
+    public async Task ShouldReturnBadRequest_WhenDuplicateUser()
+    {
+        var dto = new UserRegistrationDto
+        {
+            Name = "Jane Doe",
+            Username = $"jane_integration_{Guid.NewGuid():N}".Substring(0, 16),
+            Email = $"jane_{Guid.NewGuid():N}@example.com",
+            Password = "StrongPass123!"
+        };
+
+        // Register first time
+        var first = await _client.PostAsJsonAsync("/api/auth/register", dto);
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // Attempt to register again with same credentials
+        var second = await _client.PostAsJsonAsync("/api/auth/register", dto);
+        Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
+    }
+
+    // === Login ===
+
     private async Task RegisterTestUserAsync()
     {
         var userRegistration = new UserRegistrationDto
@@ -25,7 +67,7 @@ public class AuthControllerIntegrationTests : IClassFixture<TestApplicationFacto
             Password = "StrongPass123!"
         };
 
-        await _client.PostAsJsonAsync("/api/user/register", userRegistration);
+        await _client.PostAsJsonAsync("/api/auth/register", userRegistration);
     }
 
     [Fact]
@@ -41,15 +83,9 @@ public class AuthControllerIntegrationTests : IClassFixture<TestApplicationFacto
 
         var response = await _client.PostAsJsonAsync("/api/auth/login", loginData);
 
-        if (response.StatusCode != HttpStatusCode.OK)
-        {
-            var body = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Login failed with {response.StatusCode}. Response body: {body}");
-        }
-
-        var responseString = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync();
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("token", responseString.ToLower());
+        Assert.Contains("token", body.ToLower());
     }
 
     [Fact]

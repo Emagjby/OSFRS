@@ -93,7 +93,7 @@ public class ReservationService : IReservationService
             FacilityId = dto.FacilityId,
             StartTime = dto.StartTime,
             EndTime = dto.EndTime,
-            Status = "Pending...",
+            Status = "Pending",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -161,13 +161,13 @@ public class ReservationService : IReservationService
                 throw new UnauthorizedAccessException("You do not have permission to cancel this reservation.");
             }
 
-            if (reservation.Status == "Canceled")
+            if (reservation.Status == "Cancelled")
             {
                 _logger.LogWarning("Reservation {ReservationId} is already canceled.", id);
                 throw new InvalidOperationException("This reservation is already canceled.");
             }
 
-            await _repo.UpdateStatusAsync(id, "Canceled");
+            await _repo.UpdateStatusAsync(id, "Cancelled");
 
             _logger.LogInformation("User {UserId} successfully canceled reservation {ReservationId}", userId, id);
         }

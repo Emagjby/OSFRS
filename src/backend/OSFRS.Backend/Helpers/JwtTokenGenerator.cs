@@ -34,6 +34,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     public string GenerateToken(User user, int? expiryInMinutes = null)
     {
         Claim[] claims = [
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(JwtClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtClaimNames.UniqueName, user.Username),
             new Claim(ClaimTypes.Role, user.Role),

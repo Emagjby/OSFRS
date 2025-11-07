@@ -17,14 +17,16 @@ public class ReservationRepository : IReservationRepository
         _logger = logger;
     }
 
-    public async Task AddAsync(Reservation reservation)
+    public async Task<Reservation?> AddAsync(Reservation reservation)
     {
         _context.Reservations.Add(reservation);
         await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation created for UserId {UserId}", reservation.UserId);
+
+        return reservation;
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
         var reservation = await _context.Reservations.FindAsync(id);
         if(reservation != null)
@@ -32,10 +34,13 @@ public class ReservationRepository : IReservationRepository
             _context.Reservations.Remove(reservation);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Reservation {ReservationId} deleted.", id);
+
+            return true;
         }
         else
         {
             _logger.LogWarning("Attempted to delete non-existent reservation with ID {ReservationId}", id);
+            return false;
         }
     }
 
@@ -71,11 +76,13 @@ public class ReservationRepository : IReservationRepository
             );
     }
 
-    public async Task UpdateAsync(Reservation reservation)
+    public async Task<Reservation?> UpdateAsync(Reservation reservation)
     {
         _context.Reservations.Update(reservation);
         await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation {ReservationId} updated.", reservation.Id);
+
+        return reservation;
     }
 
     public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null)
@@ -124,7 +131,7 @@ public class ReservationRepository : IReservationRepository
         return await query.ToListAsync();
     }
 
-    public async Task UpdateStatusAsync(int id, string status)
+    public async Task<Reservation?> UpdateStatusAsync(int id, string status)
     {
         var reservation = await _context.Reservations.FindAsync(id);
         if (reservation == null)
@@ -138,6 +145,8 @@ public class ReservationRepository : IReservationRepository
 
         await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);
+
+        return reservation;
     }
 
     public async Task<bool> HasConflictAsync(int facilityId, DateTime start, DateTime end, int excludeReservationId)
