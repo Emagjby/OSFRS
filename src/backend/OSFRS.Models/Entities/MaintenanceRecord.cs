@@ -3,14 +3,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OSFRS.Models.Entities;
 
-public class Reservation
+public class MaintenanceRecord
 {
     public int Id { get; set; } // Primary Key
 
+    public int FacilityId { get; set; } // Foreign Key
+    public Facility Facility { get; set; } = null!;
+
     [Required]
-    public int UserId { get; set; } // Foreign Key
-    
-    public int FacilityId { get; set; }  // Foreign Key
+    [MaxLength(200)]
+    public string Description { get; set; } = string.Empty;
 
     [Required]
     public DateTime StartTime { get; set; }
@@ -20,11 +22,8 @@ public class Reservation
 
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = "Pending";
+    public string Status { get; set; } = "Scheduled";
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
-    public User User { get; set; } = null!;
-    public Facility Facility { get; set; } = null!;
 }
