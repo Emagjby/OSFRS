@@ -2,19 +2,19 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OSFRS.Backend.DTOs;
 
-public class UserRegistrationDto
+public record UserRegistrationDto
 {
     [Required]
-    public string Name { get; set; } = null!;
+    public string Name { get; init; } = null!;
 
     [Required]
-    public string Username { get; set; } = null!;
+    public string Username { get; init; } = null!;
 
     [Required]
     [EmailAddress]
-    public string Email { get; set; } = null!;
+    public string Email { get; init; } = null!;
 
     [Required]
     [MinLength(8)]
-    public string Password { get; set; } = null!;
+    public string Password { get; init; } = null!;
 }

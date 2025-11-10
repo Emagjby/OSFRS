@@ -3,26 +3,26 @@ using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.DTOs;
 
-public class ReservationDto
+public record ReservationDto
 {
     [Required]
-    public int Id { get; set; }
+    public int Id { get; init; }
 
     [Required]
-    public int UserId { get; set; }
+    public int UserId { get; init; }
 
-    public int FacilityId { get; set; }
-
-    [Required]
-    public DateTime StartTime { get; set; }
+    public int FacilityId { get; init; }
 
     [Required]
-    public DateTime EndTime { get; set; }
+    public DateTime StartTime { get; init; }
+
+    [Required]
+    public DateTime EndTime { get; init; }
 
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = null!;
+    public string Status { get; init; } = null!;
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
 }

@@ -13,11 +13,11 @@ namespace OSFRS.Backend.Controllers;
 [Authorize]
 public class ProfileController : ControllerBase
 {
-    private readonly IProfileService _profileService;
+    private readonly IProfileService _service;
 
-    public ProfileController(IProfileService profileService)
+    public ProfileController(IProfileService service)
     {
-        _profileService = profileService;
+        _service = service;
     }
 
     // GET: api/profile
@@ -29,7 +29,7 @@ public class ProfileController : ControllerBase
 
         int userId = int.Parse(userIdClaim);
 
-        var profile = await _profileService.GetProfileAsync(userId);
+        var profile = await _service.GetProfileAsync(userId);
         if (profile == null) throw new Exception("User not found.");
 
         return Ok(profile);
@@ -46,7 +46,7 @@ public class ProfileController : ControllerBase
 
         try
         {
-            await _profileService.UpdateProfileAsync(userId, dto);
+            await _service.UpdateProfileAsync(userId, dto);
             return Ok(new { message = "Profile updated successfully." });
         }
         catch (ArgumentException ex)

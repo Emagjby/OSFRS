@@ -2,11 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OSFRS.Backend.DTOs;
 
-public class LoginRequestDto
+public record LoginRequestDto
 {
     [Required]
-    public string UsernameOrEmail { get; set; } = null!;
+    public string UsernameOrEmail { get; init; } = null!;
 
     [Required]
-    public string Password { get; set; } = null!;
+    public string Password { get; init; } = null!;
 }

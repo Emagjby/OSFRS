@@ -39,6 +39,8 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
+builder.Services.AddScoped<IFacilityService, FacilityService>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Controllers

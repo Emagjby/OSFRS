@@ -2,15 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OSFRS.Backend.DTOs;
 
-public class CreateReservationDto
+public record CreateReservationDto
 {
-    public int UserId { get; set; }
-
-    public int FacilityId { get; set; }
+    public int FacilityId { get; init; }
 
     [Required]
-    public DateTime StartTime { get; set; }
+    public DateTime StartTime { get; init; }
     
     [Required]
-    public DateTime EndTime { get; set; }
+    public DateTime EndTime { get; init; }
 }

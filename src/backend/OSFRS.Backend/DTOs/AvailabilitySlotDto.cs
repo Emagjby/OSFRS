@@ -2,23 +2,23 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OSFRS.Backend.DTOs;
 
-public class AvailabilitySlotDto
+public record AvailabilitySlotDto
 {
     [Required]
-    public int Id { get; set; }
+    public int Id { get; init; }
 
-    public int FacilityId { get; set; }
-
-    [Required]
-    public int UserId { get; set; }
+    public int FacilityId { get; init; }
 
     [Required]
-    public DateTime StartTime { get; set; }
+    public int UserId { get; init; }
 
     [Required]
-    public DateTime EndTime { get; set; }
+    public DateTime StartTime { get; init; }
+
+    [Required]
+    public DateTime EndTime { get; init; }
 
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = null!;
+    public string Status { get; init; } = null!;
 }

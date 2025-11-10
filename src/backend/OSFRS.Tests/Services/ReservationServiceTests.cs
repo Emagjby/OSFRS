@@ -40,10 +40,9 @@ public class ReservationServiceTests
         var result = await _service.CreateReservationAsync(new CreateReservationDto
         {
             FacilityId = reservation.FacilityId,
-            UserId = reservation.UserId,
             StartTime = reservation.StartTime,
             EndTime = reservation.EndTime
-        });
+        }, reservation.UserId);
 
         Assert.NotNull(result);
         Assert.Equal(reservation.FacilityId, result.FacilityId);
@@ -77,10 +76,9 @@ public class ReservationServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateReservationAsync(new CreateReservationDto
         {
             FacilityId = reservation.FacilityId,
-            UserId = reservation.UserId,
             StartTime = reservation.StartTime,
             EndTime = reservation.EndTime
-        }));
+        }, reservation.UserId));
         _mockRepo.Verify(r => r.AddAsync(It.IsAny<Reservation>()), Times.Never);
         // The method logs the creation attempt before checking availability.
         _mockLogger.Verify(l => l.LogInformation(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
@@ -100,10 +98,9 @@ public class ReservationServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateReservationAsync(new CreateReservationDto
         {
             FacilityId = reservation.FacilityId,
-            UserId = reservation.UserId,
             StartTime = reservation.StartTime,
             EndTime = reservation.EndTime
-        }));
+        }, reservation.UserId));
         _mockRepo.Verify(r => r.IsSlotAvailableAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>()), Times.Never);
         _mockLogger.Verify(l => l.LogInformation(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }

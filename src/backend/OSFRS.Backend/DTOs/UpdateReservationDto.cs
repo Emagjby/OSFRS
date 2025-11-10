@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OSFRS.Backend.DTOs;
 
-public class UpdateReservationDto
+public record UpdateReservationDto
 {
     [Required]
-    public DateTime StartTime { get; set; }
+    public DateTime StartTime { get; init; }
 
     [Required]
-    public DateTime EndTime { get; set; }
+    public DateTime EndTime { get; init; }
 
     [MaxLength(20)]
-    public string? Status { get; set; }
+    public string? Status { get; init; }
 }

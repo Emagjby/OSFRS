@@ -12,12 +12,12 @@ namespace OSFRS.Backend.Controllers;
 [Route("api/[controller]")]
 public class ReservationsController : ControllerBase
 {
-    private readonly IReservationService _reservationService;
+    private readonly IReservationService _service;
     private readonly IAppLogger<ReservationsController> _logger;
 
-    public ReservationsController(IReservationService reservationService, IAppLogger<ReservationsController> logger)
+    public ReservationsController(IReservationService service, IAppLogger<ReservationsController> logger)
     {
-        _reservationService = reservationService;
+        _service = service;
         _logger = logger;
     }
 
@@ -28,7 +28,7 @@ public class ReservationsController : ControllerBase
         {
             if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
 
-            var calendar = await _reservationService.GetAvailabilityCalendarAsync(facilityId, date);
+            var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
             if (!calendar.Any())
             {
                 _logger.LogInformation("No reservations found for facility {FacilityId} on {Date}", facilityId, date ?? DateTime.UtcNow);
@@ -52,7 +52,7 @@ public class ReservationsController : ControllerBase
         {
             if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
 
-            var reservations = await _reservationService.GetReservationsAsync(facilityId, start, end);
+            var reservations = await _service.GetReservationsAsync(facilityId, start, end);
             return Ok(reservations);
         }
         catch (Exception ex)
@@ -73,7 +73,7 @@ public class ReservationsController : ControllerBase
     {
         try
         {
-            var results = await _reservationService.SearchReservationAsync(userId, facilityId, start, end);
+            var results = await _service.SearchReservationAsync(userId, facilityId, start, end);
             return Ok(results);
         }
         catch (Exception ex)
@@ -92,9 +92,7 @@ public class ReservationsController : ControllerBase
             var userId = UserContextHelper.GetUserId(User);
             if (userId == null) return Unauthorized("User ID not found in token.");
 
-            dto.UserId = userId.Value;
-
-            var reservation = await _reservationService.CreateReservationAsync(dto);
+            var reservation = await _service.CreateReservationAsync(dto, userId.Value);
             return Ok(reservation);
         }
         catch (ArgumentException ex)
@@ -123,7 +121,7 @@ public class ReservationsController : ControllerBase
             var userId = UserContextHelper.GetUserId(User);
             if (userId == null) return Unauthorized("User ID not found in token.");
 
-            var updatedReservation = await _reservationService.UpdateReservationAsync(id, dto, userId.Value);
+            var updatedReservation = await _service.UpdateReservationAsync(id, dto, userId.Value);
             return Ok(updatedReservation);
         }
         catch (UnauthorizedAccessException ex)
@@ -156,7 +154,7 @@ public class ReservationsController : ControllerBase
             var userId = UserContextHelper.GetUserId(User);
             if (userId == null) return Unauthorized("User ID not found in token.");
 
-            await _reservationService.CancelReservationAsync(id, userId.Value);
+            await _service.CancelReservationAsync(id, userId.Value);
             return Ok(new { message = "Reservation cancelled successfully." });
         }
         catch (UnauthorizedAccessException ex)
@@ -184,7 +182,7 @@ public class ReservationsController : ControllerBase
         
         try
         {
-            var myReservations = await _reservationService.SearchReservationAsync(userId, null, null, null);
+            var myReservations = await _service.SearchReservationAsync(userId, null, null, null);
             if (!myReservations.Any())
             {
                 _logger.LogInformation("No reservations found for user {UserId}.", userId);
@@ -217,7 +215,7 @@ public class ReservationsController : ControllerBase
     {
         try
         {
-            var reservations = await _reservationService.GetAllReservationsAsync();
+            var reservations = await _service.GetAllReservationsAsync();
 
             if (!reservations.Any())
             {
@@ -251,7 +249,7 @@ public class ReservationsController : ControllerBase
             if (adminId == null)
                 return Unauthorized(new { message = "Admin ID not found in token." });
 
-            var updatedReservation = await _reservationService.AdminUpdateReservationAsync(id, dto, adminId.Value);
+            var updatedReservation = await _service.AdminUpdateReservationAsync(id, dto, adminId.Value);
 
             _logger.LogInformation("Admin {AdminId} successfully updated reservation {ReservationId}.", adminId, id);
             return Ok(updatedReservation);
@@ -290,7 +288,7 @@ public class ReservationsController : ControllerBase
                 return Unauthorized(new { message = "Admin ID not found in token." });
             }
 
-            await _reservationService.DeleteReservationAsync(id, adminId.Value);
+            await _service.DeleteReservationAsync(id, adminId.Value);
 
             _logger.LogInformation("Admin {AdminId} successfully deleted reservation {ReservationId}.", adminId, id);
             return Ok(new { message = "Reservation deleted successfully." });

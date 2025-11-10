@@ -9,11 +9,11 @@ namespace OSFRS.Backend.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthService _service;
 
     public AuthController(IAuthService authService)
     {
-        _authService = authService;
+        _service = authService;
     }
 
     //POST: api/auth/register
@@ -22,7 +22,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            await _authService.RegisterUserAsync(dto);
+            await _service.RegisterUserAsync(dto);
             return Ok(new { message = "User registered successfully." });
         }
         catch (Exception ex)
@@ -37,7 +37,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var token = await _authService.LoginAsync(dto);
+            var token = await _service.LoginAsync(dto);
             return Ok(new { token });
         }
         catch (Exception ex)

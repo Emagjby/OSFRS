@@ -76,12 +76,12 @@ public class ReservationService : IReservationService
         }
     }
     
-    public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto)
+    public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, int userId)
     {
-        _logger.LogInformation("Creating reservation for user {UserId} at facility {FacilityId}", dto.UserId, dto.FacilityId);
+        _logger.LogInformation("Creating reservation for user {UserId} at facility {FacilityId}", userId, dto.FacilityId);
 
         if (!ReservationValidator.ValidateFacilityId(dto.FacilityId)) throw new ArgumentException("Invalid facility ID.");
-        if (!ReservationValidator.ValidateUserId(dto.UserId)) throw new ArgumentException("Invalid user ID.");
+        if (!ReservationValidator.ValidateUserId(userId)) throw new ArgumentException("Invalid user ID.");
         if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime)) throw new ArgumentException("Invalid time range for reservations");
 
         bool isAvailable = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, dto.FacilityId);
@@ -89,7 +89,7 @@ public class ReservationService : IReservationService
 
         var reservation = new Reservation
         {
-            UserId = dto.UserId,
+            UserId = userId,
             FacilityId = dto.FacilityId,
             StartTime = dto.StartTime,
             EndTime = dto.EndTime,
