@@ -51,6 +51,15 @@ public class FacilityRepository : IFacilityRepository
         return await _context.Facilities.FindAsync(id);
     }
 
+    public async Task<bool> IsFacilityAvailableAsync(int facilityId)
+    {
+        var facility = await _context.Facilities.FindAsync(facilityId);
+        if (facility == null)
+            throw new InvalidOperationException($"Facility with ID {facilityId} not found.");
+
+        return facility.Status == "Available";
+    }
+
     public async Task<Facility> UpdateAsync(Facility facility)
     {
         var existant = await _context.Facilities.FindAsync(facility.Id);
@@ -70,5 +79,22 @@ public class FacilityRepository : IFacilityRepository
         _logger.LogInformation("Facility '{Name}' updated successfully.");
 
         return existant;
+    }
+
+    public async Task UpdateAvailabilityAsync(int facilityId, bool isAvailable)
+    {
+        var facility = await _context.Facilities.FindAsync(facilityId);
+        if (facility == null)
+        {
+            _logger.LogWarning("Attempted to update availability of non-existent facility with ID {Id}.", facilityId);
+            throw new InvalidOperationException("Facility not found.");
+        }
+
+        facility.Status = isAvailable ? "Available" : "Unavailable";
+        facility.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Facility with ID '{Id}' availability updated to '{Status}'.", facilityId, facility.Status);
     }
 }

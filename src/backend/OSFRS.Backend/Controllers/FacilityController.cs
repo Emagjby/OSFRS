@@ -119,9 +119,49 @@ public class FacilityController : ControllerBase
 
             return Ok(new { message = "Facility deleted successfully." });
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting facility {Id}", id);
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+
+    [HttpGet("{id}/availability")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAvailability(int id)
+    {
+        try
+        {
+            var available = _service.IsFacilityAvailableAsync(id);
+            return Ok(new { FacilityId = id, IsAvailable = available });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking availability for facility {Id}", id);
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+
+    [HttpPatch("{id}/availability")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateAvailability(int id, [FromBody] bool availability)
+    {
+        try
+        {
+            await _service.UpdateAvailabilityAsync(id, availability);
+            return Ok(new { message = "Facility availability updated successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error updating availability for Facility {Id}", id);
             return StatusCode(500, "Internal server error.");
         }
     }

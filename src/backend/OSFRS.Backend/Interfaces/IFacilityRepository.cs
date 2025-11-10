@@ -10,4 +10,6 @@ public interface IFacilityRepository
     Task<Facility> AddAsync(Facility facility);
     Task<Facility> UpdateAsync(Facility facility);
     Task<bool> DeleteAsync(int id);
+    Task UpdateAvailabilityAsync(int facilityId, bool isAvailable);
+    Task<bool> IsFacilityAvailableAsync(int facilityId);
 }

@@ -67,6 +67,22 @@ public class FacilityService : IFacilityService
         return facility;
     }
 
+    public async Task<bool> IsFacilityAvailableAsync(int facilityId)
+    {
+        return await _repo.IsFacilityAvailableAsync(facilityId);
+    }
+
+    public async Task<bool> UpdateAvailabilityAsync(int facilityId, bool isAvailable)
+    {
+        var existing = await _repo.GetByIdAsync(facilityId);
+        if (existing == null)
+            throw new InvalidOperationException("Facility not found.");
+
+        await _repo.UpdateAvailabilityAsync(facilityId, isAvailable);
+        _logger.LogInformation("Facility {Id} marked as {Status}", facilityId, isAvailable ? "Available" : "Unavailable");
+        return isAvailable;
+    }
+
     public async Task<Facility?> UpdateFacilityAsync(int id, UpdateFacilityDto dto)
     {
         var existing = await _repo.GetByIdAsync(id);

@@ -10,4 +10,6 @@ public interface IFacilityService
     Task<Facility?> CreateFacilityAsync(CreateFacilityDto dto);
     Task<Facility?> UpdateFacilityAsync(int id, UpdateFacilityDto dto);
     Task<bool> DeleteFacilityAsync(int id);
+    Task<bool> UpdateAvailabilityAsync(int facilityId, bool isAvailable);
+    Task<bool> IsFacilityAvailableAsync(int facilityId);
 }
