@@ -11,6 +11,7 @@ using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
 using OSFRS.Models.Entities;
+using OSFRS.Backend.Services.Background;
 
 Env.Load();
 
@@ -41,7 +42,12 @@ builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
 builder.Services.AddScoped<IFacilityService, FacilityService>();
+builder.Services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
+builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+
+// Hosted services
+builder.Services.AddHostedService<FacilityStatusSyncService>();
 
 // Controllers
 builder.Services.AddControllers();

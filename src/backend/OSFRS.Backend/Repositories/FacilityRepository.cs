@@ -43,21 +43,36 @@ public class FacilityRepository : IFacilityRepository
 
     public async Task<IEnumerable<Facility>> GetAllAsync()
     {
-        return await _context.Facilities.ToListAsync();
+        _logger.LogInformation("Fetching all facilities...");
+        var facilities = await _context.Facilities.ToListAsync();
+        _logger.LogInformation("Fetched {Count} facilities.", facilities.Count);
+        return facilities;
     }
 
     public async Task<Facility?> GetByIdAsync(int id)
     {
-        return await _context.Facilities.FindAsync(id);
+        var facility = await _context.Facilities.FindAsync(id);
+        if (facility == null)
+        {
+            _logger.LogWarning("Facility with ID {Id} not found.", id);
+        }
+        else
+        {
+            _logger.LogInformation("Fetched facility with ID {Id}.", id);
+        }
+        return facility;
     }
 
     public async Task<bool> IsFacilityAvailableAsync(int facilityId)
     {
+        _logger.LogInformation("Checking availability for facility ID {FacilityId}...", facilityId);
         var facility = await _context.Facilities.FindAsync(facilityId);
         if (facility == null)
             throw new InvalidOperationException($"Facility with ID {facilityId} not found.");
 
-        return facility.Status == "Available";
+        bool available = facility.Status == "Available";
+        _logger.LogInformation("Facility ID {FacilityId} availability is {Available}.", facilityId, available);
+        return available;
     }
 
     public async Task<Facility> UpdateAsync(Facility facility)

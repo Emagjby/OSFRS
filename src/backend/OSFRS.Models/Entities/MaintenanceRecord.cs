@@ -23,6 +23,9 @@ public class MaintenanceRecord
     [Required]
     [MaxLength(20)]
     public string Status { get; set; } = "Scheduled";
+    // Scheduled - Created but not started yet
+    // InProgress - Maintenance currently being performed
+    // Completed - Finished, facility can be marked available again
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

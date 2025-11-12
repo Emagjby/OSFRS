@@ -20,6 +20,9 @@ public class Facility
     [Required]
     [MaxLength(20)]
     public string Status { get; set; } = "Available";
+    // Available - Can be reserved
+    // Under Maintenance - Temporary unavailable due to maintenance
+    // Unavailable - Permanently or manually disabled by admin
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
