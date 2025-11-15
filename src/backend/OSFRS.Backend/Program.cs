@@ -10,8 +10,8 @@ using System.Text;
 using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
-using OSFRS.Models.Entities;
-using OSFRS.Backend.Services.Background;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 Env.Load();
 
@@ -44,10 +44,24 @@ builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
 builder.Services.AddScoped<IFacilityService, FacilityService>();
 builder.Services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
 builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
+builder.Services.AddScoped<IUsageRepository, UsageRepository>();
+builder.Services.AddScoped<IUsageService, UsageService>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
-// Hosted services
-builder.Services.AddHostedService<FacilityStatusSyncService>();
+// Hangfire setup
+builder.Services.AddHangfire((sp, config) =>
+{
+    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+          .UseSimpleAssemblyNameTypeSerializer()
+          .UseRecommendedSerializerSettings()
+          .UsePostgreSqlStorage(options =>
+          {
+              options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
+          });
+});
+
+// Hangfire server
+builder.Services.AddHangfireServer();
 
 // Controllers
 builder.Services.AddControllers();
@@ -71,6 +85,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var jobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    jobManager.AddOrUpdate<IUsageService>(
+        "daily-usage-aggregation",
+        service => service.AggregateAsync(),
+        "5 0 * * *"   // every day at 00:05 UTC
+    );
+
+    jobManager.AddOrUpdate<IMaintenanceService>(
+        "facility-status-sync",
+        service => service.SyncFacilityStatusesAsync(),
+        "*/5 * * * *" // every 5 minutes
+    );
+}
 
 app.UseRouting();
 

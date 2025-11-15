@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OSFRS.Backend.DTOs;
+using OSFRS.Backend.Helpers.Usage;
 using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 
@@ -11,11 +12,13 @@ namespace OSFRS.Backend.Controllers;
 public class MaintenanceController : ControllerBase
 {
     private readonly IMaintenanceService _service;
+    private readonly IUsageService _usage;
     private readonly IAppLogger<MaintenanceController> _logger;
 
-    public MaintenanceController(IMaintenanceService service, IAppLogger<MaintenanceController> logger)
+    public MaintenanceController(IMaintenanceService service, IUsageService usage, IAppLogger<MaintenanceController> logger)
     {
         _service = service;
+        _usage = usage;
         _logger = logger;
     }
 
@@ -29,6 +32,13 @@ public class MaintenanceController : ControllerBase
                 return BadRequest(ModelState);
 
             var created = await _service.ScheduleMaintenanceAsync(dto);
+
+            await _usage.LogEventAsync(UsageEventBuilder.Create(
+                eventType: UsageEventTypes.MaintenanceScheduled,
+                userId: null, 
+                facilityId: created.FacilityId
+            ));
+
             return Ok(created);
         }
         catch (InvalidOperationException ex)
@@ -58,6 +68,13 @@ public class MaintenanceController : ControllerBase
                 return BadRequest(ModelState);
 
             var updated = await _service.UpdateMaintenanceAsync(id, dto);
+
+            await _usage.LogEventAsync(UsageEventBuilder.Create(
+                eventType: UsageEventTypes.MaintenanceUpdated,
+                userId: null,
+                facilityId: updated!.FacilityId
+            ));
+
             return Ok(updated);
         }
         catch (ArgumentException ex)
@@ -86,6 +103,10 @@ public class MaintenanceController : ControllerBase
             var deleted = await _service.DeleteMaintenanceAsync(id);
             if (!deleted)
                 return NotFound(new { message = "Maintenance record not found." });
+
+            await _usage.LogEventAsync(UsageEventBuilder.Create(
+                UsageEventTypes.MaintenanceDeleted
+            ));
 
             return Ok(new { message = "Maintenance record deleted successfully." });
         }
@@ -147,6 +168,11 @@ public class MaintenanceController : ControllerBase
         {
             await _service.SyncFacilityStatusesAsync();
             _logger.LogInformation("Manual facility status sync executed by admin.");
+
+            await _usage.LogEventAsync(UsageEventBuilder.Create(
+                UsageEventTypes.StatusSyncRun
+            ));
+
             return Ok(new { message = "Facility statuses synchronized successfully." });
         }
         catch (Exception ex)

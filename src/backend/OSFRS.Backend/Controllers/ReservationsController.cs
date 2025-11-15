@@ -5,6 +5,7 @@ using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Validators;
 using OSFRS.Backend.Helpers.Auth;
 using Microsoft.AspNetCore.Authorization;
+using OSFRS.Backend.Helpers.Usage;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -13,11 +14,13 @@ namespace OSFRS.Backend.Controllers;
 public class ReservationsController : ControllerBase
 {
     private readonly IReservationService _service;
+    private readonly IUsageService _usage;
     private readonly IAppLogger<ReservationsController> _logger;
 
-    public ReservationsController(IReservationService service, IAppLogger<ReservationsController> logger)
+    public ReservationsController(IReservationService service, IUsageService usage, IAppLogger<ReservationsController> logger)
     {
         _service = service;
+        _usage = usage;
         _logger = logger;
     }
 
@@ -93,6 +96,16 @@ public class ReservationsController : ControllerBase
             if (userId == null) return Unauthorized("User ID not found in token.");
 
             var reservation = await _service.CreateReservationAsync(dto, userId.Value);
+
+            await _usage.LogEventAsync(
+                UsageEventBuilder.Create(
+                    eventType: UsageEventTypes.ReservationCreated,
+                    userId: userId.Value,
+                    facilityId: reservation.FacilityId,
+                    metadata: new() { { "ReservationId", reservation.Id.ToString() } }
+                )
+            );
+
             return Ok(reservation);
         }
         catch (ArgumentException ex)
@@ -122,6 +135,16 @@ public class ReservationsController : ControllerBase
             if (userId == null) return Unauthorized("User ID not found in token.");
 
             var updatedReservation = await _service.UpdateReservationAsync(id, dto, userId.Value);
+
+            await _usage.LogEventAsync(
+                UsageEventBuilder.Create(
+                    eventType: UsageEventTypes.ReservationUpdated,
+                    userId: userId.Value,
+                    facilityId: updatedReservation.FacilityId,
+                    metadata: new() { { "ReservationId", updatedReservation.Id.ToString() } }
+                )
+            );
+
             return Ok(updatedReservation);
         }
         catch (UnauthorizedAccessException ex)
@@ -155,6 +178,16 @@ public class ReservationsController : ControllerBase
             if (userId == null) return Unauthorized("User ID not found in token.");
 
             await _service.CancelReservationAsync(id, userId.Value);
+
+            await _usage.LogEventAsync(
+                UsageEventBuilder.Create(
+                    eventType: UsageEventTypes.ReservationCancelled,
+                    userId: userId.Value,
+                    facilityId: null,
+                    metadata: new() { { "ReservationId", id.ToString() } }
+                )
+            );
+
             return Ok(new { message = "Reservation cancelled successfully." });
         }
         catch (UnauthorizedAccessException ex)
@@ -252,6 +285,16 @@ public class ReservationsController : ControllerBase
             var updatedReservation = await _service.AdminUpdateReservationAsync(id, dto, adminId.Value);
 
             _logger.LogInformation("Admin {AdminId} successfully updated reservation {ReservationId}.", adminId, id);
+
+            await _usage.LogEventAsync(
+                UsageEventBuilder.Create(
+                    eventType: UsageEventTypes.ReservationAdminUpdated,
+                    userId: adminId.Value,
+                    facilityId: updatedReservation.FacilityId,
+                    metadata: new() { { "ReservationId", id.ToString() } }
+                )
+            );
+
             return Ok(updatedReservation);
         }
         catch (InvalidOperationException ex)
@@ -291,6 +334,16 @@ public class ReservationsController : ControllerBase
             await _service.DeleteReservationAsync(id, adminId.Value);
 
             _logger.LogInformation("Admin {AdminId} successfully deleted reservation {ReservationId}.", adminId, id);
+
+            await _usage.LogEventAsync(
+                UsageEventBuilder.Create(
+                    eventType: UsageEventTypes.ReservationDeleted,
+                    userId: adminId.Value,
+                    facilityId: null,
+                    metadata: new() { { "ReservationId", id.ToString() } }
+                )
+            );
+
             return Ok(new { message = "Reservation deleted successfully." });
         }
         catch (InvalidOperationException ex)
