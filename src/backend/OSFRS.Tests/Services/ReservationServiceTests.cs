@@ -12,7 +12,7 @@ public class ReservationServiceTests
 {
     private readonly Mock<IReservationRepository> _mockRepo;
     private readonly Mock<IAppLogger<ReservationService>> _mockLogger;
-    private readonly ReservationService _service;
+    private readonly IReservationService _service;
 
     public ReservationServiceTests()
     {

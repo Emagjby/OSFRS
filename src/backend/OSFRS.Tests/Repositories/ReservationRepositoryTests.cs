@@ -5,12 +5,13 @@ using OSFRS.Models.Entities;
 using OSFRS.Backend.Repositories;
 using OSFRS.Backend.Data;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces;
 
 namespace OSFRS.Tests.Repositories;
 
 public class ReservationRepositoryTests
 {
-    private readonly ReservationRepository _repo;
+    private readonly IReservationRepository _repo;
     private readonly OSFRSDbContext _context;
     private readonly Mock<IAppLogger<ReservationRepository>> _mockLogger;
 

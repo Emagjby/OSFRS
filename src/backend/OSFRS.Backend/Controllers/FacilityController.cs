@@ -132,7 +132,7 @@ public class FacilityController : ControllerBase
     {
         try
         {
-            var available = _service.IsFacilityAvailableAsync(id);
+            var available = await _service.IsFacilityAvailableAsync(id);
             return Ok(new { FacilityId = id, IsAvailable = available });
         }
         catch (InvalidOperationException ex)

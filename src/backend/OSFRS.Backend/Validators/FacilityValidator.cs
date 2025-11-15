@@ -19,7 +19,7 @@ public static class FacilityValidator
             return false;
         }
 
-        if (dto.Capacity < 1 || dto.Capacity > 1000)
+        if (dto.Capacity < 1)
         {
             error = "Facility capacity must be greater than zero.";
             return false;
