@@ -13,12 +13,14 @@ public class StatisticsController : ControllerBase
 {
     private readonly IUsageService _usage;
     private readonly IReportService _report;
+    private readonly IAnalyticsService _analytics;
     private readonly IAppLogger<StatisticsController> _logger;
 
-    public StatisticsController(IUsageService usage, IReportService report, IAppLogger<StatisticsController> logger)
+    public StatisticsController(IUsageService usage, IReportService report, IAnalyticsService analytics, IAppLogger<StatisticsController> logger)
     {
         _usage = usage;
         _report = report;
+        _analytics = analytics;
         _logger = logger;
     }
 
@@ -156,6 +158,102 @@ public class StatisticsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error exporting PDF report");
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+
+    [HttpGet("analytics/trends/daily")]
+    public async Task<IActionResult> GetDailyTrends([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    {
+        try
+        {
+            if (from is null || to is null)
+                return BadRequest("Both 'from' and 'to' are required.");
+
+            var report = await _analytics.GetDailyTrendsAsync(from.Value, to.Value);
+            return Ok(report);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error computing DAILY trends");
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+
+    [HttpGet("analytics/trends/monthly")]
+    public async Task<IActionResult> GetMonthlyTrends([FromQuery] int? year)
+    {
+        try
+        {
+            var targetYear = year ?? DateTime.UtcNow.Year;
+
+            var report = await _analytics.GetMonthlyTrendsAsync(targetYear);
+            return Ok(report);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error computing MONTHLY trends");
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+
+    [HttpGet("analytics/peaks")]
+    public async Task<IActionResult> GetPeakUsage(
+    [FromQuery] DateTime? from,
+    [FromQuery] DateTime? to)
+{
+    try
+    {
+        if (from is null || to is null)
+            return BadRequest("Both 'from' and 'to' are required.");
+
+        var peak = await _analytics.GetPeakUsageAsync(from.Value, to.Value);
+        return Ok(peak);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error computing peak usage");
+        return StatusCode(500, "Internal server error.");
+    }
+}
+
+[HttpGet("analytics/anomalies")]
+public async Task<IActionResult> DetectAnomalies(
+    [FromQuery] DateTime? from,
+    [FromQuery] DateTime? to,
+    [FromQuery] string mode = "z-score")
+{
+    try
+    {
+        if (from is null || to is null)
+            return BadRequest("Both 'from' and 'to' are required.");
+
+        var result = await _analytics.DetectAnomaliesAsync(from.Value, to.Value, mode);
+        return Ok(result);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error detecting anomalies");
+        return StatusCode(500, "Internal server error.");
+    }
+}
+
+    [HttpGet("analytics/visualization")]
+    public async Task<IActionResult> GetVisualizationData(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to)
+    {
+        try
+        {
+            if (from is null || to is null)
+                return BadRequest("Both 'from' and 'to' are required.");
+
+            var chart = await _analytics.GetVisualizationDataAsync(from.Value, to.Value);
+            return Ok(chart);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building visualization dataset");
             return StatusCode(500, "Internal server error.");
         }
     }

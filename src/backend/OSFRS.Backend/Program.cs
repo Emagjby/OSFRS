@@ -48,6 +48,8 @@ builder.Services.AddScoped<IUsageRepository, UsageRepository>();
 builder.Services.AddScoped<IUsageService, UsageService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Hangfire setup
