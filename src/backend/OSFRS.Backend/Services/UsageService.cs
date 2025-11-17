@@ -68,9 +68,9 @@ public class UsageService : IUsageService
         );
     }
 
-    public Task<IEnumerable<UsageRecord>> GetDailyAggregateAsync(DateTime date)
+    public async Task<IEnumerable<UsageRecord>> GetDailyAggregateAsync(DateTime date)
     {
-        return _repo.GetDailyAnalyticsAsync(date);
+        return await _repo.GetDailyAnalyticsAsync(date);
     }
 
     public async Task<IEnumerable<UsageRecord>> GetEventsAsync(
@@ -90,9 +90,9 @@ public class UsageService : IUsageService
         return events;
     }
 
-    public Task<IEnumerable<UsageRecord>> GetMonthlyAggregateAsync(int year, int month)
+    public async Task<IEnumerable<UsageRecord>> GetMonthlyAggregateAsync(int year, int month)
     {
-        return GetMonthlyAggregateAsync(year, month);
+        return await _repo.GetMonthlyAnalyticsAsync(year, month);
     }
 
     public async Task LogEventAsync(UsageEventDto dto)

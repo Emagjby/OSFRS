@@ -46,6 +46,8 @@ builder.Services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
 builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped<IUsageRepository, UsageRepository>();
 builder.Services.AddScoped<IUsageService, UsageService>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Hangfire setup
@@ -108,6 +110,14 @@ app.UseRouting();
 // Add JWT auth middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
+{
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [ new AllowAllHangfireAuthFilter() ]
+    });
+}
 
 // Map controllers
 app.MapControllers();

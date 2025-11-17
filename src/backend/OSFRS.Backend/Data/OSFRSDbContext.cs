@@ -19,6 +19,7 @@ public class OSFRSDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // USER
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Username)
             .IsUnique();
@@ -27,24 +28,28 @@ public class OSFRSDbContext : DbContext
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        // RESERVATIONS - USER
         modelBuilder.Entity<Reservation>()
             .HasOne(r => r.User)
-            .WithMany()
+            .WithMany()                   // no back-collection on User
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // RESERVATIONS - FACILITY 
         modelBuilder.Entity<Reservation>()
             .HasOne(r => r.Facility)
-            .WithMany()
+            .WithMany(f => f.Reservations)
             .HasForeignKey(r => r.FacilityId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // MAINTENANCE - FACILITY 
         modelBuilder.Entity<MaintenanceRecord>()
             .HasOne(m => m.Facility)
-            .WithMany()
+            .WithMany(f => f.MaintenanceRecords)
             .HasForeignKey(m => m.FacilityId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // USAGE RECORDS
         modelBuilder.Entity<UsageRecord>(entity =>
         {
             entity.Property(e => e.EventType)
@@ -62,6 +67,7 @@ public class OSFRSDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // REPORTS
         modelBuilder.Entity<Report>(entity =>
         {
             entity.Property(e => e.Name)
@@ -76,6 +82,7 @@ public class OSFRSDbContext : DbContext
                 .IsRequired();
         });
 
+        // ANALYTICS
         modelBuilder.Entity<AnalyticsRecord>(entity =>
         {
             entity.Property(e => e.EventType)
