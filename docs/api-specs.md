@@ -47,14 +47,14 @@ Authorization: Bearer <token>
 
 ### 2.1 Register
 
-**POST** `/api/v1/auth/register`
+**POST** `/api/auth/register`
 **Auth:** No
 
 Body: `UserRegistrationDto`
 
 ### 2.2 Login
 
-**POST** `/api/v1/auth/login`
+**POST** `/api/auth/login`
 **Auth:** No
 
 Returns only:
@@ -67,11 +67,11 @@ Returns only:
 
 ### 2.3 Get Profile
 
-**GET** `/api/v1/profile`
+**GET** `/api/profile`
 
 ### 2.4 Update Profile
 
-**PUT** `/api/v1/profile`
+**PUT** `/api/profile`
 
 ---
 
@@ -79,43 +79,43 @@ Returns only:
 
 ### 3.1 Get Availability
 
-**GET** `/api/v1/reservations/availability/{facilityId}`
+**GET** `/api/reservations/availability/{facilityId}`
 
 ### 3.2 Get Reservations by Facility
 
-**GET** `/api/v1/reservations/facility/{facilityId}`
+**GET** `/api/reservations/facility/{facilityId}`
 
 ### 3.3 Search Reservations
 
-**GET** `/api/v1/reservations/search`
+**GET** `/api/reservations/search`
 
 ### 3.4 Create Reservation
 
-**POST** `/api/v1/reservations/create`
+**POST** `/api/reservations/create`
 
 ### 3.5 Update Reservation
 
-**PUT** `/api/v1/reservations/update/{id}`
+**PUT** `/api/reservations/update/{id}`
 
 ### 3.6 Cancel Reservation
 
-**PUT** `/api/v1/reservations/cancel/{id}`
+**PUT** `/api/reservations/cancel/{id}`
 
 ### 3.7 Get My Reservations
 
-**GET** `/api/v1/reservations/my`
+**GET** `/api/reservations/my`
 
 ### 3.8 Admin – Get All Reservations
 
-**GET** `/api/v1/reservations/admin/all`
+**GET** `/api/reservations/admin/all`
 
 ### 3.9 Admin – Update Reservation
 
-**PUT** `/api/v1/reservations/admin/update/{id}`
+**PUT** `/api/reservations/admin/update/{id}`
 
 ### 3.10 Admin – Delete Reservation
 
-**DELETE** `/api/v1/reservations/admin/delete/{id}`
+**DELETE** `/api/reservations/admin/delete/{id}`
 
 ---
 
@@ -123,31 +123,31 @@ Returns only:
 
 ### 4.1 Get All Facilities
 
-**GET** `/api/v1/facility`
+**GET** `/api/facility`
 
 ### 4.2 Get Facility by Id
 
-**GET** `/api/v1/facility/{id}`
+**GET** `/api/facility/{id}`
 
 ### 4.3 Create Facility
 
-**POST** `/api/v1/facility`
+**POST** `/api/facility`
 
 ### 4.4 Update Facility
 
-**PUT** `/api/v1/facility/{id}`
+**PUT** `/api/facility/{id}`
 
 ### 4.5 Delete Facility
 
-**DELETE** `/api/v1/facility/{id}`
+**DELETE** `/api/facility/{id}`
 
 ### 4.6 Get Facility Availability
 
-**GET** `/api/v1/facility/{id}/availability`
+**GET** `/api/facility/{id}/availability`
 
 ### 4.7 Update Facility Availability
 
-**PATCH** `/api/v1/facility/{id}/availability`
+**PATCH** `/api/facility/{id}/availability`
 
 ---
 
@@ -155,27 +155,27 @@ Returns only:
 
 ### 5.1 Schedule Maintenance
 
-**POST** `/api/v1/maintenance`
+**POST** `/api/maintenance`
 
 ### 5.2 Update Maintenance
 
-**PUT** `/api/v1/maintenance/{id}`
+**PUT** `/api/maintenance/{id}`
 
 ### 5.3 Delete Maintenance
 
-**DELETE** `/api/v1/maintenance/{id}`
+**DELETE** `/api/maintenance/{id}`
 
 ### 5.4 Get Maintenance Records for Facility
 
-**GET** `/api/v1/maintenance/facility/{facilityId}`
+**GET** `/api/maintenance/facility/{facilityId}`
 
 ### 5.5 Get Upcoming Maintenance
 
-**GET** `/api/v1/maintenance/upcoming`
+**GET** `/api/maintenance/upcoming`
 
 ### 5.6 Sync Statuses
 
-**POST** `/api/v1/maintenance/sync-statuses`
+**POST** `/api/maintenance/sync-statuses`
 
 ---
 
@@ -183,35 +183,35 @@ Returns only:
 
 ### 6.1 Get Events
 
-**GET** `/api/v1/statistics/events`
+**GET** `/api/statistics/events`
 
 ### 6.2 Get Daily Aggregates
 
-**GET** `/api/v1/statistics/aggregate/daily`
+**GET** `/api/statistics/aggregate/daily`
 
 ### 6.3 Get Monthly Aggregates
 
-**GET** `/api/v1/statistics/aggregate/monthly`
+**GET** `/api/statistics/aggregate/monthly`
 
 ### 6.4 Run Aggregation
 
-**POST** `/api/v1/statistics/aggregate/run`
+**POST** `/api/statistics/aggregate/run`
 
 ### 6.5 Get Daily Report
 
-**GET** `/api/v1/statistics/reports/daily`
+**GET** `/api/statistics/reports/daily`
 
 ### 6.6 Get Monthly Report
 
-**GET** `/api/v1/statistics/reports/monthly`
+**GET** `/api/statistics/reports/monthly`
 
 ### 6.7 Export CSV
 
-**GET** `/api/v1/statistics/export/csv`
+**GET** `/api/statistics/export/csv`
 
 ### 6.8 Export PDF
 
-**GET** `/api/v1/statistics/export/pdf`
+**GET** `/api/statistics/export/pdf`
 
 ---
 
@@ -219,22 +219,22 @@ Returns only:
 
 ### 7.1 Daily Trends
 
-**GET** `/api/v1/statistics/analytics/trends/daily`
+**GET** `/api/statistics/analytics/trends/daily`
 
 ### 7.2 Monthly Trends
 
-**GET** `/api/v1/statistics/analytics/trends/monthly`
+**GET** `/api/statistics/analytics/trends/monthly`
 
 ### 7.3 Peak Usage
 
-**GET** `/api/v1/statistics/analytics/peaks`
+**GET** `/api/statistics/analytics/peaks`
 
 ### 7.4 Detect Anomalies
 
-**GET** `/api/v1/statistics/analytics/anomalies`
+**GET** `/api/statistics/analytics/anomalies`
 
 ### 7.5 Visualization Data
 
-**GET** `/api/v1/statistics/analytics/visualization`
+**GET** `/api/statistics/analytics/visualization`
 
 **End of OSFRS API Specification – Alpha v1**
