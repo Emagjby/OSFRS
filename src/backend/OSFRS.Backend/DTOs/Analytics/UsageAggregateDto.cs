@@ -1,22 +1,15 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Analytics;
 
 public record UsageAggregateDto
 {
-    [Required]
-    [MaxLength(50)]
-    public string EventType { get; set; } = null!;
+    public string EventType { get; init; } = null!;
 
-    [Required]
-    public int Count { get; set; }
+    public int Count { get; init; }
 
-    [Required]
-    public DateTime PeriodStart { get; set; }
+    public DateTime PeriodStart { get; init; }
 
-    [Required]
-    public DateTime PeriodEnd { get; set; }
+    public DateTime PeriodEnd { get; init; }
 
-    public int? UserId { get; set; }
-    public int? FacilityId { get; set; }
+    public int? UserId { get; init; }
+    public int? FacilityId { get; init; }
 }

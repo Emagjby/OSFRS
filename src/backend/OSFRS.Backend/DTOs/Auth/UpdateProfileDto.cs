@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Auth;
 
 public record UpdatedProfileDto
 {
@@ -8,7 +6,6 @@ public record UpdatedProfileDto
 
     public string Username { get; init; } = null!;
 
-    [EmailAddress]
     public string Email { get; init; } = null!;
 
     // Optional

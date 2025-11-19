@@ -1,6 +1,6 @@
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Auth;
 
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Service;
 
 public interface IProfileService
 {

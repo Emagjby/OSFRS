@@ -1,8 +1,8 @@
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Reports;
 
 public record ReportResultDto
 {
-    public DateTime GeneratedAtUtc { get; set; }
-    public List<ReportEntryDto> Daily { get; set; } = [];
-    public List<ReportEntryDto> Monthly { get; set; } = [];
+    public DateTime GeneratedAtUtc { get; init; }
+    public List<ReportEntryDto> Daily { get; init; } = [];
+    public List<ReportEntryDto> Monthly { get; init; } = [];
 }

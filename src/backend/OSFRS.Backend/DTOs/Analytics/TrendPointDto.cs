@@ -1,7 +1,7 @@
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Analytics;
 
 public record TrendPointDto
 {
-    public DateTime Timestamp { get; set; }
-    public int Count { get; set; }
+    public DateTime Timestamp { get; init; }
+    public int Count { get; init; }
 }

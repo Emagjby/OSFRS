@@ -1,4 +1,4 @@
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Facilities;
 
 public record FacilityDto
 {

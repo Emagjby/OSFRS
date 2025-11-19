@@ -1,6 +1,7 @@
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.DTOs.Maintenance;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
@@ -144,7 +145,7 @@ public class MaintenanceService : IMaintenanceService
                 _logger.LogInformation("Facility ID {Id} marked as 'Available'.", facility.Id);
             }
         }
-        
+
         _logger.LogInformation("Facility status sync completed.");
     }
 
@@ -168,7 +169,7 @@ public class MaintenanceService : IMaintenanceService
 
         if (dto.EndTime.HasValue)
             entity.EndTime = dto.EndTime.Value;
-        
+
         entity.Status = dto.Status ?? entity.Status;
         entity.UpdatedAt = DateTime.UtcNow;
 

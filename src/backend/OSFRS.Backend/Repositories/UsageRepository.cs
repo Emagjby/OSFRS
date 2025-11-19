@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Data;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Repositories;
@@ -14,7 +14,7 @@ public class UsageRepository : BaseRepository<UsageRecord>, IUsageRepository
     ) : base(context, logger)
     {
     }
-    
+
     private async Task<bool> HasDailyAggregateAsync(DateTime date)
     {
         var dayStart = date.Date;

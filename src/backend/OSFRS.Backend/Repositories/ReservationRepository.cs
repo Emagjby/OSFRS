@@ -1,8 +1,8 @@
-using OSFRS.Backend.Interfaces;
 using OSFRS.Models.Entities;
 using OSFRS.Backend.Data;
 using OSFRS.Backend.Interfaces.Logging;
 using Microsoft.EntityFrameworkCore;
+using OSFRS.Backend.Interfaces.Repository;
 
 namespace OSFRS.Backend.Repositories;
 
@@ -13,7 +13,7 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
         IAppLogger<BaseRepository<Reservation>> logger
     ) : base(context, logger)
     {
-        
+
     }
 
 
@@ -52,7 +52,7 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
 
     public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null)
     {
-       var query = _dbSet.Where(r => r.FacilityId == facilityId);
+        var query = _dbSet.Where(r => r.FacilityId == facilityId);
 
         if (start.HasValue)
             query = query.Where(r => r.StartTime >= start);

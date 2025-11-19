@@ -1,9 +1,9 @@
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Analytics;
 
 public record PeakUsageDto
 {
-    public DateTime PeakTimestamp { get; set; }
-    public int PeakCount { get; set; }
+    public DateTime PeakTimestamp { get; init; }
+    public int PeakCount { get; init; }
 
-    public required string Grouping { get; set; } // examples: Hour, Day, Facility...
+    public required string Grouping { get; init; } // examples: Hour, Day, Facility...
 }

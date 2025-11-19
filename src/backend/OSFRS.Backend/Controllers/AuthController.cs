@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Interfaces;
-using OSFRS.Backend.Services;
+using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Backend.Interfaces.Service;
 
 namespace OSFRS.Backend.Controllers;
 

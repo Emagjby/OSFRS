@@ -1,6 +1,8 @@
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Backend.Interfaces.Helper;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Validators;
 using OSFRS.Models.Entities;
 
@@ -17,7 +19,7 @@ public class AuthService : IAuthService
         IUserRepository repo,
         IPasswordHasher hasher,
         IJwtTokenGenerator jwt,
-        IAppLogger<AuthService> logger) 
+        IAppLogger<AuthService> logger)
     {
         _repo = repo;
         _hasher = hasher;
@@ -60,7 +62,7 @@ public class AuthService : IAuthService
 
         return token;
     }
-    
+
     public async Task RegisterUserAsync(UserRegistrationDto dto)
     {
         try

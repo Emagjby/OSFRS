@@ -1,4 +1,4 @@
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Base;
 
 public interface IBaseService<TEntity, TDto> : IBaseReadService<TDto>
 {

@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Data;
 using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.Interfaces.Base;
 using OSFRS.Backend.Interfaces.Logging;
 
 namespace OSFRS.Backend.Repositories;
@@ -103,7 +104,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
 
             return result;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving changes for {Entity}", _entityName);
             throw;

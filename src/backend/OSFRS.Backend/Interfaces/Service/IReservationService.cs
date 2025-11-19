@@ -1,7 +1,8 @@
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Reports;
+using OSFRS.Backend.DTOs.Reservations;
 using OSFRS.Models.Entities;
 
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Service;
 
 public interface IReservationService
 {

@@ -1,6 +1,6 @@
 using OSFRS.Models.Entities;
 
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Repository;
 
 public interface IReportRepository
 {

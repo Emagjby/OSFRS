@@ -1,7 +1,8 @@
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Reports;
 using OSFRS.Backend.Helpers.Reports;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;

@@ -1,8 +1,9 @@
-using System.Net.Mime;
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Analytics;
+using OSFRS.Backend.DTOs.Reports;
 using OSFRS.Backend.Helpers.Analytics;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
 
 namespace OSFRS.Backend.Services;
 

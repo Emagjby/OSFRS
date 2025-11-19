@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Facilities;
 using OSFRS.Backend.Helpers.Auth;
 using OSFRS.Backend.Helpers.Usage;
-using OSFRS.Backend.Interfaces;
-using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Service;
 
 namespace OSFRS.Backend.Controllers;
 

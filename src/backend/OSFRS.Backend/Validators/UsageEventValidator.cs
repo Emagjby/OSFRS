@@ -1,4 +1,5 @@
 using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Analytics;
 
 namespace OSFRS.Backend.Validators;
 

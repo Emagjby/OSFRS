@@ -1,7 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Data;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Repositories;
@@ -11,9 +10,9 @@ public class FacilityRepository : BaseRepository<Facility>, IFacilityRepository
     public FacilityRepository(
         OSFRSDbContext context,
         IAppLogger<BaseRepository<Facility>> logger
-    ) : base (context, logger)
+    ) : base(context, logger)
     {
-        
+
     }
 
     public async Task<bool> IsFacilityAvailableAsync(int facilityId)
@@ -49,7 +48,7 @@ public class FacilityRepository : BaseRepository<Facility>, IFacilityRepository
         facility.UpdatedAt = DateTime.UtcNow;
 
         _logger.LogInformation(
-            "Facility ID {Id} availability updated to {Status}", 
+            "Facility ID {Id} availability updated to {Status}",
             facilityId, facility.Status
         );
     }

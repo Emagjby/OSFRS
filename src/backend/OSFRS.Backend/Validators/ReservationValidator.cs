@@ -1,5 +1,4 @@
-using System;
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Reports;
 
 namespace OSFRS.Backend.Validators;
 

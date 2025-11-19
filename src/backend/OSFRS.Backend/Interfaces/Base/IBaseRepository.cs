@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Base;
 
 public interface IBaseRepository<TEntity> where TEntity : class
 {

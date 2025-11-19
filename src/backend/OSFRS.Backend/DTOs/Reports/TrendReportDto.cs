@@ -1,11 +1,13 @@
-namespace OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Analytics;
+
+namespace OSFRS.Backend.DTOs.Reports;
 
 public record TrendReportDto
 {
-    public required string RangeLabel { get; set; }
-    public IEnumerable<TrendPointDto> Points { get; set; } = [];
-    public int TotalCount { get; set; }
-    public double AveragePerPoint { get; set; }
-    public IEnumerable<double>? MovingAverage { get; set; }  
-    public IEnumerable<double>? PercentageChange { get; set; } 
+    public required string RangeLabel { get; init; }
+    public IEnumerable<TrendPointDto> Points { get; init; } = [];
+    public int TotalCount { get; init; }
+    public double AveragePerPoint { get; init; }
+    public IEnumerable<double>? MovingAverage { get; init; }
+    public IEnumerable<double>? PercentageChange { get; init; }
 }

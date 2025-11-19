@@ -1,4 +1,4 @@
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.Interfaces.Base;
 
 namespace OSFRS.Backend.Services;
 

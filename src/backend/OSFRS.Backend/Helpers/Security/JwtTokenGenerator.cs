@@ -1,12 +1,10 @@
-using System;
 using System.IdentityModel.Tokens.Jwt;
 using JwtClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using OSFRS.Models.Entities;
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.Interfaces.Helper;
 
 
 namespace OSFRS.Backend.Helpers;

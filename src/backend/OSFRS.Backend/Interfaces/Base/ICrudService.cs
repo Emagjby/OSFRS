@@ -1,4 +1,4 @@
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Base;
 
 public interface ICrudService<TCreateDto, TUpdateDto, TDto> : IBaseReadService<TDto>
 {

@@ -1,4 +1,4 @@
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Facilities;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Validators;
@@ -40,7 +40,7 @@ public static class FacilityValidator
         error = string.Empty;
         return true;
     }
-    
+
     public static bool ValidateUpdate(UpdateFacilityDto dto, Facility existing, out string error)
     {
         if (dto == null)

@@ -1,7 +1,7 @@
-using OSFRS.Backend.DTOs;
-using OSFRS.Models.Entities;
+using OSFRS.Backend.DTOs.Analytics;
+using OSFRS.Backend.DTOs.Reports;
 
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Service;
 
 public interface IAnalyticsService
 {

@@ -1,6 +1,4 @@
-using OSFRS.Backend.DTOs;
-
-namespace OSFRS.Backend.Interfaces;
+namespace OSFRS.Backend.Interfaces.Base;
 
 public interface IBaseReadService<TDto>
 {

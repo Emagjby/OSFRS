@@ -1,7 +1,8 @@
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Analytics;
 using OSFRS.Backend.Helpers.Usage;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Validators;
 using OSFRS.Models.Entities;
 using System.Text.Json;

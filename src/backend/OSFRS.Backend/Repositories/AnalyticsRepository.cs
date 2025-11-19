@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Data;
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.DTOs.Analytics;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Repositories;
@@ -21,7 +21,7 @@ public class AnalyticsRepository : IAnalyticsRepository
     public async Task<IEnumerable<TrendPointDto>> GetDailyCountsAsync(DateTime from, DateTime to)
     {
         from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        to   = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
         var results = await _context.UsageRecords
             .Where(r =>

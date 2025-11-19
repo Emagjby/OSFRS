@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using System.Text;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
 using Hangfire;
 using Hangfire.PostgreSql;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
+using OSFRS.Backend.Interfaces.Helper;
 
 Env.Load();
 
@@ -29,7 +31,7 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
         throw new Exception("Database connection string not found in envvars");
 
     builder.Services.AddDbContext<OSFRSDbContext>(options =>
-        options.UseNpgsql(connString)); 
+        options.UseNpgsql(connString));
 }
 
 // Dependency Injection
@@ -117,7 +119,7 @@ if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
 {
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
-        Authorization = [ new AllowAllHangfireAuthFilter() ]
+        Authorization = [new AllowAllHangfireAuthFilter()]
     });
 }
 

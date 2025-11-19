@@ -1,5 +1,5 @@
 using System.Text;
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Reports;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Helpers.Reports;

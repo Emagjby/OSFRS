@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.DTOs.Facilities;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Validators;
 using OSFRS.Models.Entities;
 

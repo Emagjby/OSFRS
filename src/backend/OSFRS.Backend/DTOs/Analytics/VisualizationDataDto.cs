@@ -1,8 +1,8 @@
-namespace OSFRS.Backend.DTOs;
+namespace OSFRS.Backend.DTOs.Analytics;
 
 public record VisualizationDataDto
 {
-    public IEnumerable<string> Labels { get; set; } = [];
-    public IEnumerable<int> Values { get; set; } = [];
-    public string ChartType { get; set; } = "line";
+    public IEnumerable<string> Labels { get; init; } = [];
+    public IEnumerable<int> Values { get; init; } = [];
+    public string ChartType { get; init; } = "line";
 }

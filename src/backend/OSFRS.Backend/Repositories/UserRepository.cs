@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Data;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Repositories;
@@ -36,7 +36,7 @@ public class UserRepository : BaseRepository<User>, IUserRepository
             _logger.LogInformation("Fetched user by username: {Username}", username);
         else
             _logger.LogInformation("No user found with username: {Username}", username);
-        
+
         return user;
     }
 
@@ -48,9 +48,9 @@ public class UserRepository : BaseRepository<User>, IUserRepository
                 user.Email == usernameOrEmail
             );
     }
-    
+
     public override async Task<User?> GetByIdAsync(
-        int id, 
+        int id,
         CancellationToken cancellationToken = default)
     {
         var user = await _dbSet.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);

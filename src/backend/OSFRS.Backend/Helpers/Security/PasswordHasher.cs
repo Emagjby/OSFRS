@@ -1,4 +1,4 @@
-using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.Interfaces.Helper;
 
 namespace OSFRS.Backend.Helpers;
 
