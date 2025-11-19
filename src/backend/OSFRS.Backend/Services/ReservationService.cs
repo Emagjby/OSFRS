@@ -26,20 +26,22 @@ public class ReservationService : IReservationService
             var end = start.AddDays(1);
 
             var reservations = await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
-            var calendar = reservations.Select(reservation => new AvailabilitySlotDto
+
+            var calendar = reservations.Select(r => new AvailabilitySlotDto
             {
-                Id = reservation.Id,
-                UserId = reservation.UserId,
-                FacilityId = reservation.FacilityId,
-                StartTime = reservation.StartTime,
-                EndTime = reservation.EndTime,
-                Status = reservation.Status
+                Id = r.Id,
+                UserId = r.UserId,
+                FacilityId = r.FacilityId,
+                StartTime = r.StartTime,
+                EndTime = r.EndTime,
+                Status = r.Status
             });
 
             _logger.LogInformation("Generated availability calendar for facility {FacilityId} on {Date}", facilityId, targetDate);
+
             return calendar;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating calendar for facility {FacilityId}", facilityId);
             throw;
@@ -51,22 +53,40 @@ public class ReservationService : IReservationService
         try
         {
             var reservations = await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
-            _logger.LogInformation("Fetched {Count} reservations for facility {FacilityId}", reservations.Count(), facilityId);
+
+            _logger.LogInformation(
+                "Fetched {Count} reservations for facility {FacilityId}",
+                reservations.Count(),
+                facilityId
+            );
+
             return reservations;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching reservations for facility {FacilityId}", facilityId);
             throw;
         }
     }
 
-    public async Task<IEnumerable<Reservation>> SearchReservationAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null)
+    public async Task<IEnumerable<Reservation>> SearchReservationAsync(
+        int? userId = null,
+        int? facilityId = null,
+        DateTime? start = null,
+        DateTime? end = null
+    )
     {
         try
         {
             var results = await _repo.SearchAsync(userId, facilityId, start, end);
-            _logger.LogInformation("Search found {Count} reservations (filters: user={UserId} facility={FacilityId})", results.Count(), userId!, facilityId!);
+
+            _logger.LogInformation(
+                "Search found {Count} reservations (filters: user={UserId} facility={FacilityId})",
+                results.Count(),
+                userId!,
+                facilityId!
+            );
+
             return results;
         }
         catch (Exception ex)
@@ -75,17 +95,22 @@ public class ReservationService : IReservationService
             throw;
         }
     }
-    
+
     public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, int userId)
     {
-        _logger.LogInformation("Creating reservation for user {UserId} at facility {FacilityId}", userId, dto.FacilityId);
+        _logger.LogInformation(
+            "Creating reservation for user {UserId} at facility {FacilityId}",
+            userId,
+            dto.FacilityId
+        );
 
         if (!ReservationValidator.ValidateFacilityId(dto.FacilityId)) throw new ArgumentException("Invalid facility ID.");
         if (!ReservationValidator.ValidateUserId(userId)) throw new ArgumentException("Invalid user ID.");
         if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime)) throw new ArgumentException("Invalid time range for reservations");
 
-        bool isAvailable = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, dto.FacilityId);
-        if (!isAvailable) throw new InvalidOperationException("The selected time slot is not available.");
+        var available = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, dto.FacilityId);
+        if (!available)
+            throw new InvalidOperationException("The selected time slot is not available.");
 
         var reservation = new Reservation
         {
@@ -99,6 +124,8 @@ public class ReservationService : IReservationService
         };
 
         await _repo.AddAsync(reservation);
+        await _repo.SaveChangesAsync();
+
         _logger.LogInformation("Reservation {ReservationId} created successfully", reservation.Id);
 
         return reservation;
@@ -108,8 +135,8 @@ public class ReservationService : IReservationService
     {
         try
         {
-            var reservation = await _repo.GetReservationByIdAsync(id);
-            if (reservation == null)
+            var reservation = await _repo.GetByIdAsync(id);
+            if (reservation is null)
             {
                 _logger.LogWarning("User {UserId} attempted to update non-existant reservation {ReservationId}", userId, id);
                 throw new InvalidOperationException("Reservation not found.");
@@ -121,23 +148,25 @@ public class ReservationService : IReservationService
                 throw new UnauthorizedAccessException("You do not have permission to update this reservation.");
             }
 
-            if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime)) 
+            if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime))
                 throw new ArgumentException("Invalid time range for reservation.");
 
-            var isAvailable = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, reservation.FacilityId);
-            if (!isAvailable) throw new InvalidOperationException("The selected time slot is already taken.");
+            var available = await _repo.IsSlotAvailableAsync(dto.StartTime, dto.EndTime, reservation.FacilityId);
+            if (!available) throw new InvalidOperationException("The selected time slot is already taken.");
 
             reservation.StartTime = dto.StartTime;
             reservation.EndTime = dto.EndTime;
             reservation.Status = dto.Status ?? reservation.Status;
             reservation.UpdatedAt = DateTime.UtcNow;
 
-            await _repo.UpdateAsync(reservation);
+            _repo.Update(reservation);
+            await _repo.SaveChangesAsync();
+
             _logger.LogInformation("User {UserId} updated reservation {ReservationId}", userId, id);
 
             return reservation;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating reservation {ReservationId} by user {UserId}", id, userId);
             throw;
@@ -148,8 +177,8 @@ public class ReservationService : IReservationService
     {
         try
         {
-            var reservation = await _repo.GetReservationByIdAsync(id);
-            if (reservation == null)
+            var reservation = await _repo.GetByIdAsync(id);
+            if (reservation is null)
             {
                 _logger.LogWarning("User {UserId} attempted to cancel non-existant reservation {ReservationId}", userId, id);
                 throw new InvalidOperationException("Reservation not found.");
@@ -167,11 +196,15 @@ public class ReservationService : IReservationService
                 throw new InvalidOperationException("This reservation is already canceled.");
             }
 
-            await _repo.UpdateStatusAsync(id, "Cancelled");
+            reservation.Status = "Cancelled";
+            reservation.UpdatedAt = DateTime.UtcNow;
+
+            _repo.Update(reservation);
+            await _repo.SaveChangesAsync();
 
             _logger.LogInformation("User {UserId} successfully canceled reservation {ReservationId}", userId, id);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling reservation {ReservationId} by user {UserId}", id, userId);
             throw;
@@ -186,7 +219,7 @@ public class ReservationService : IReservationService
             _logger.LogInformation("Admin fetched all {Count} reservations.", reservations.Count());
             return reservations;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching all reservations (admin).");
             throw;
@@ -197,17 +230,19 @@ public class ReservationService : IReservationService
     {
         try
         {
-            var reservation = await _repo.GetReservationByIdAsync(id);
-            if (reservation == null)
+            var reservation = await _repo.GetByIdAsync(id);
+            if (reservation is null)
             {
                 _logger.LogWarning("Admin {AdminId} attempted to delete a non-existant reservation {ReservationId}", adminId, id);
                 throw new InvalidOperationException("Reservation not found.");
             }
 
-            await _repo.DeleteAsync(id);
+            _repo.Remove(reservation);
+            await _repo.SaveChangesAsync();
+
             _logger.LogInformation("Admin {AdminId} deleted reservation {ReservationId}", adminId, id);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting reservation {ReservationId} by admin {AdminId}", id, adminId);
             throw;
@@ -218,8 +253,8 @@ public class ReservationService : IReservationService
     {
         try
         {
-            var reservation = await _repo.GetReservationByIdAsync(id);
-            if (reservation == null)
+            var reservation = await _repo.GetByIdAsync(id);
+            if (reservation is null)
             {
                 _logger.LogWarning("Admin {AdminId} attempted to update a non-existant reservation {ReservationId}", adminId, id);
                 throw new InvalidOperationException("Reservation not found.");
@@ -228,8 +263,14 @@ public class ReservationService : IReservationService
             if (!ReservationValidator.ValidateTimes(dto.StartTime, dto.EndTime))
                 throw new ArgumentException("Invalid time range for reservation.");
 
-            bool hasConflict = await _repo.HasConflictAsync(reservation.FacilityId, dto.StartTime, dto.EndTime, id);
-            if (hasConflict)
+            var conflict = await _repo.HasConflictAsync(
+                reservation.FacilityId,
+                dto.StartTime,
+                dto.EndTime,
+                id
+            );
+
+            if (conflict)
             {
                 _logger.LogWarning("Admin {AdminId} is overriding a conflict while updating reservation {ReservationId}", adminId, id);
             }
@@ -239,12 +280,14 @@ public class ReservationService : IReservationService
             reservation.Status = dto.Status ?? reservation.Status;
             reservation.UpdatedAt = DateTime.UtcNow;
 
-            await _repo.UpdateAsync(reservation);
+            _repo.Update(reservation);
+            await _repo.SaveChangesAsync();
+
             _logger.LogInformation("Admin {AdminId} updated reservation {ReservationId}", adminId, id);
 
             return reservation;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating reservation {ReservationId} by admin {AdminId}.", id, adminId);
             throw;

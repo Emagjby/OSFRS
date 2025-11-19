@@ -3,13 +3,8 @@ using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Interfaces;
 
-public interface IFacilityRepository
+public interface IFacilityRepository : IBaseRepository<Facility>
 {
-    Task<IEnumerable<Facility>> GetAllAsync();
-    Task<Facility?> GetByIdAsync(int id);
-    Task<Facility> AddAsync(Facility facility);
-    Task<Facility> UpdateAsync(Facility facility);
-    Task<bool> DeleteAsync(int id);
     Task UpdateAvailabilityAsync(int facilityId, bool isAvailable);
     Task<bool> IsFacilityAvailableAsync(int facilityId);
 }

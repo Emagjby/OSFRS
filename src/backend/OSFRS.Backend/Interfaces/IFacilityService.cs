@@ -1,15 +1,9 @@
 using OSFRS.Backend.DTOs;
-using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Interfaces;
 
-public interface IFacilityService
+public interface IFacilityService : ICrudService<CreateFacilityDto, UpdateFacilityDto, FacilityDto>
 {
-    Task<IEnumerable<Facility>> GetAllFacilitiesAsync();
-    Task<Facility?> GetFacilityByIdAsync(int id);
-    Task<Facility?> CreateFacilityAsync(CreateFacilityDto dto);
-    Task<Facility?> UpdateFacilityAsync(int id, UpdateFacilityDto dto);
-    Task<bool> DeleteFacilityAsync(int id);
     Task<bool> UpdateAvailabilityAsync(int facilityId, bool isAvailable);
     Task<bool> IsFacilityAvailableAsync(int facilityId);
 }

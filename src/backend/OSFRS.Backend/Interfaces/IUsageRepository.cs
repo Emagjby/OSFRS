@@ -3,10 +3,8 @@ using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Interfaces;
 
-public interface IUsageRepository
+public interface IUsageRepository : IBaseRepository<UsageRecord>
 {
-    Task<UsageRecord> AddAsync(UsageRecord usageRecord);
-    Task AddRangeAsync(IEnumerable<UsageRecord> usageRecords);
 
     Task<IEnumerable<UsageRecord>> QueryAsync(
         string? eventType = null,
@@ -21,6 +19,4 @@ public interface IUsageRepository
 
     Task<IEnumerable<UsageRecord>> GetDailyAnalyticsAsync(DateTime date);
     Task<IEnumerable<UsageRecord>> GetMonthlyAnalyticsAsync(int year, int month);
-
-    Task SaveChangesAsync();
 }

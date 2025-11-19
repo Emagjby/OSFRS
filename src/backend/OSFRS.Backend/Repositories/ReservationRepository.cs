@@ -6,107 +6,66 @@ using Microsoft.EntityFrameworkCore;
 
 namespace OSFRS.Backend.Repositories;
 
-public class ReservationRepository : IReservationRepository
+public class ReservationRepository : BaseRepository<Reservation>, IReservationRepository
 {
-    private readonly OSFRSDbContext _context;
-    private readonly IAppLogger<ReservationRepository> _logger;
-
-    public ReservationRepository(OSFRSDbContext context, IAppLogger<ReservationRepository> logger)
+    public ReservationRepository(
+        OSFRSDbContext context,
+        IAppLogger<BaseRepository<Reservation>> logger
+    ) : base(context, logger)
     {
-        _context = context;
-        _logger = logger;
+        
     }
 
-    public async Task<Reservation?> AddAsync(Reservation reservation)
-    {
-        _context.Reservations.Add(reservation);
-        await _context.SaveChangesAsync();
-        _logger.LogInformation("Reservation created for UserId {UserId}", reservation.UserId);
-
-        return reservation;
-    } //
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var reservation = await _context.Reservations.FindAsync(id);
-        if(reservation != null)
-        {
-            _context.Reservations.Remove(reservation);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Reservation {ReservationId} deleted.", id);
-
-            return true;
-        }
-        else
-        {
-            _logger.LogWarning("Attempted to delete non-existent reservation with ID {ReservationId}", id);
-            return false;
-        }
-    }
-
-    public async Task<IEnumerable<Reservation>> GetAllAsync()
-    {
-        return await _context.Reservations
-            .Include(reservation => reservation.User)
-            .ToListAsync();
-    }
 
     public async Task<IEnumerable<Reservation>> GetByUserAsync(int userId)
     {
-        return await _context.Reservations
+        return await _dbSet
             .Where(reservation => reservation.UserId == userId)
             .ToListAsync();
     }
 
-    public async Task<Reservation?> GetReservationByIdAsync(int id)
+    public async Task<IEnumerable<Reservation>> GetAllWithUserAsync()
     {
-        return await _context.Reservations
-            .Include(reservation => reservation.User)
-            .FirstOrDefaultAsync(reservation => reservation.Id == id);
+        return await _dbSet
+            .Include(r => r.User)
+            .ToListAsync();
+    }
+
+    public override async Task<Reservation?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.Id == id);
     }
 
     public async Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId)
     {
-        return !await _context.Reservations
-            .AnyAsync(reservation =>
-                reservation.FacilityId == facilityId &&
-                ((start >= reservation.StartTime && start < reservation.EndTime) ||
-                 (end > reservation.StartTime && end <= reservation.EndTime) ||
-                 (start <= reservation.StartTime && end >= reservation.EndTime))
-            );
-    }
-
-    public async Task<Reservation?> UpdateAsync(Reservation reservation)
-    {
-        _context.Reservations.Update(reservation);
-        await _context.SaveChangesAsync();
-        _logger.LogInformation("Reservation {ReservationId} updated.", reservation.Id);
-
-        return reservation;
+        return !await _dbSet.AnyAsync(r =>
+            r.FacilityId == facilityId &&
+            (
+                (start >= r.StartTime && start < r.EndTime) ||
+                (end > r.StartTime && end <= r.EndTime) ||
+                (start <= r.StartTime && end >= r.EndTime)
+            )
+        );
     }
 
     public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null)
     {
-        var query = _context.Reservations.AsQueryable();
-
-        query = query.Where(reservation => reservation.FacilityId == facilityId);
+       var query = _dbSet.Where(r => r.FacilityId == facilityId);
 
         if (start.HasValue)
-        {
-            query = query.Where(reservation => reservation.StartTime >= start);
-        }
+            query = query.Where(r => r.StartTime >= start);
 
         if (end.HasValue)
-        {
-            query = query.Where(reservation => reservation.EndTime <= end);
-        }
+            query = query.Where(r => r.EndTime <= end);
 
         return await query.ToListAsync();
     }
 
     public async Task<IEnumerable<Reservation>> SearchAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null)
     {
-        var query = _context.Reservations.AsQueryable();
+        var query = _dbSet.AsQueryable();
 
         if (userId.HasValue)
         {
@@ -133,7 +92,8 @@ public class ReservationRepository : IReservationRepository
 
     public async Task<Reservation?> UpdateStatusAsync(int id, string status)
     {
-        var reservation = await _context.Reservations.FindAsync(id);
+        var reservation = await _dbSet.FindAsync(id);
+
         if (reservation == null)
         {
             _logger.LogWarning("Attempted to update status for non-existant reservation {ReservationId}", id);
@@ -143,7 +103,6 @@ public class ReservationRepository : IReservationRepository
         reservation.Status = status;
         reservation.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);
 
         return reservation;
@@ -151,7 +110,7 @@ public class ReservationRepository : IReservationRepository
 
     public async Task<bool> HasConflictAsync(int facilityId, DateTime start, DateTime end, int excludeReservationId)
     {
-        var conflictExists = await _context.Reservations.AnyAsync(reservation =>
+        var conflictExists = await _dbSet.AnyAsync(reservation =>
             reservation.FacilityId == facilityId &&
             reservation.Id != excludeReservationId &&
             (

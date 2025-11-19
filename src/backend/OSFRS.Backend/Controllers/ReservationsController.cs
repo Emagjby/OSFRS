@@ -15,13 +15,11 @@ public class ReservationsController : ControllerBase
 {
     private readonly IReservationService _service;
     private readonly IUsageService _usage;
-    private readonly IAppLogger<ReservationsController> _logger;
 
-    public ReservationsController(IReservationService service, IUsageService usage, IAppLogger<ReservationsController> logger)
+    public ReservationsController(IReservationService service, IUsageService usage)
     {
         _service = service;
         _usage = usage;
-        _logger = logger;
     }
 
     [HttpGet("availability/{facilityId}")]
@@ -29,21 +27,12 @@ public class ReservationsController : ControllerBase
     {
         try
         {
-            if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
-
             var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
-            if (!calendar.Any())
-            {
-                _logger.LogInformation("No reservations found for facility {FacilityId} on {Date}", facilityId, date ?? DateTime.UtcNow);
-                return NotFound("No reservations found for this facility on the specified date.");
-            }
-
             return Ok(calendar);
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            _logger.LogError(ex, "Error retrieving availability for facility {FacilityId}", facilityId);
-            return StatusCode(500, "Internal server error while fetching availability.");
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -53,15 +42,12 @@ public class ReservationsController : ControllerBase
     {
         try
         {
-            if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
-
             var reservations = await _service.GetReservationsAsync(facilityId, start, end);
             return Ok(reservations);
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            _logger.LogError(ex, "Error retrieving reservations for facility {FacilityId}", facilityId);
-            return StatusCode(500, "Internal server error while fetching reservation.");
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -74,33 +60,24 @@ public class ReservationsController : ControllerBase
         [FromQuery] DateTime? end
     )
     {
-        try
-        {
-            var results = await _service.SearchReservationAsync(userId, facilityId, start, end);
-            return Ok(results);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error searching reservations.");
-            return StatusCode(500, "Internal server error while searching reservations.");
-        }
+        var results = await _service.SearchReservationAsync(userId, facilityId, start, end);
+        return Ok(results);
     }
 
-    [HttpPost("create")]
+    [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
     {
+        var userId = UserContextHelper.GetUserId(User)!.Value;
+
         try
         {
-            var userId = UserContextHelper.GetUserId(User);
-            if (userId == null) return Unauthorized("User ID not found in token.");
-
-            var reservation = await _service.CreateReservationAsync(dto, userId.Value);
+            var reservation = await _service.CreateReservationAsync(dto, userId);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationCreated,
-                    userId: userId.Value,
+                    UsageEventTypes.ReservationCreated,
+                    userId: userId,
                     facilityId: reservation.FacilityId,
                     metadata: new() { { "ReservationId", reservation.Id.ToString() } }
                 )
@@ -116,36 +93,28 @@ public class ReservationsController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error creating reservation.");
-            return StatusCode(500, "Internal server error while creating reservation.");
-        }
     }
 
-    [HttpPut("update/{id}")]
+    [HttpPut("{id}")]
     [Authorize]
     public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationDto dto)
     {
+        var userId = UserContextHelper.GetUserId(User)!.Value;
+
         try
         {
-            if (!ReservationValidator.ValidateUpdate(dto)) return BadRequest("Invalid reservation update data.");
-
-            var userId = UserContextHelper.GetUserId(User);
-            if (userId == null) return Unauthorized("User ID not found in token.");
-
-            var updatedReservation = await _service.UpdateReservationAsync(id, dto, userId.Value);
+            var updated = await _service.UpdateReservationAsync(id, dto, userId);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationUpdated,
-                    userId: userId.Value,
-                    facilityId: updatedReservation.FacilityId,
-                    metadata: new() { { "ReservationId", updatedReservation.Id.ToString() } }
+                    UsageEventTypes.ReservationUpdated,
+                    userId: userId,
+                    facilityId: updated.FacilityId,
+                    metadata: new() { { "ReservationId", updated.Id.ToString() } }
                 )
             );
 
-            return Ok(updatedReservation);
+            return Ok(updated);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -159,31 +128,22 @@ public class ReservationsController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error updating reservation {ReservationId}", id);
-            return StatusCode(500, "Internal server error while updating reservation.");
-        }
     }
 
     [HttpPut("cancel/{id}")]
     [Authorize]
     public async Task<IActionResult> CancelReservation(int id)
     {
+        var userId = UserContextHelper.GetUserId(User)!.Value;
+
         try
         {
-            if (!ReservationValidator.ValidateReservationId(id)) return BadRequest("Invalid reservation ID.");
-
-            var userId = UserContextHelper.GetUserId(User);
-            if (userId == null) return Unauthorized("User ID not found in token.");
-
-            await _service.CancelReservationAsync(id, userId.Value);
+            await _service.CancelReservationAsync(id, userId);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationCancelled,
-                    userId: userId.Value,
-                    facilityId: null,
+                    UsageEventTypes.ReservationCancelled,
+                    userId: userId,
                     metadata: new() { { "ReservationId", id.ToString() } }
                 )
             );
@@ -198,11 +158,6 @@ public class ReservationsController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error cancelling reservation {ReservationId}", id);
-            return StatusCode(500, "Internal server error while cancelling reservation.");
-        }
     }
 
     [Authorize]
@@ -210,136 +165,68 @@ public class ReservationsController : ControllerBase
     public async Task<IActionResult> GetMyReservations()
     {
         var userId = UserContextHelper.GetUserId(User);
-        if (userId == null)
-            return Unauthorized(new { message = "User ID not found in token." });
-        
-        try
-        {
-            var myReservations = await _service.SearchReservationAsync(userId, null, null, null);
-            if (!myReservations.Any())
-            {
-                _logger.LogInformation("No reservations found for user {UserId}.", userId);
-                return NotFound("You have no active or past reservations.");
-            }
-            
-            _logger.LogInformation("User {UserId} fetched {Count} reservations.", userId, myReservations.Count());
-            return Ok(myReservations);
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning("Invalid parameters while fetching reservations for user {UserId}.", userId);
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning("Operation failed while fetching reservations for user {UserId}.", userId);
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while fetching reservations for user {UserId}.", userId);
-            return StatusCode(500, new { message = "Internal server error while fetching your reservations." });
-        }
+
+        var reservations = await _service.SearchReservationAsync(userId: userId);
+        return Ok(reservations);
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpGet("admin/all")]
+    [HttpGet]
     public async Task<IActionResult> GetAllReservations()
     {
-        try
-        {
-            var reservations = await _service.GetAllReservationsAsync();
-
-            if (!reservations.Any())
-            {
-                _logger.LogInformation("No reservations found when fetching all (admin request).");
-                return NotFound(new { message = "No reservations found in the system." });
-            }
-
-            _logger.LogInformation("Admin fetched {Count} total reservations.", reservations.Count());
-            return Ok(reservations);
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching all reservations (admin request).");
-            return StatusCode(500, new { message = "Internal server error while fetching reservations" });
-        }
+        var reservations = await _service.GetAllReservationsAsync();
+        return Ok(reservations);
     }
 
     [Authorize(Roles = "Admin")]
     [HttpPut("admin/update/{id}")]
     public async Task<IActionResult> AdminUpdateReservation(int id, [FromBody] UpdateReservationDto dto)
     {
+        var adminId = UserContextHelper.GetUserId(User)!.Value;
+
         try
         {
-            if (!ReservationValidator.ValidateReservationId(id))
-                return BadRequest(new { message = "Invalid reservation ID." });
-
-            if (!ReservationValidator.ValidateUpdate(dto))
-                return BadRequest(new { message = "Invalid reservation update data." });
-
-            var adminId = UserContextHelper.GetUserId(User);
-            if (adminId == null)
-                return Unauthorized(new { message = "Admin ID not found in token." });
-
-            var updatedReservation = await _service.AdminUpdateReservationAsync(id, dto, adminId.Value);
-
-            _logger.LogInformation("Admin {AdminId} successfully updated reservation {ReservationId}.", adminId, id);
+            var updated = await _service.AdminUpdateReservationAsync(id, dto, adminId);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationAdminUpdated,
-                    userId: adminId.Value,
-                    facilityId: updatedReservation.FacilityId,
+                    UsageEventTypes.ReservationAdminUpdated,
+                    userId: adminId,
+                    facilityId: updated.FacilityId,
                     metadata: new() { { "ReservationId", id.ToString() } }
                 )
             );
 
-            return Ok(updatedReservation);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
+            return Ok(updated);
         }
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(403, new { message = ex.Message });
         }
-        catch(Exception ex)
+        catch (ArgumentException ex)
         {
-            _logger.LogError(ex, "Unexpected error while admin updating reservation {ReservationId}", id);
-            return StatusCode(500, new { message = "Internal server error while updating reservation." });
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
         }
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpDelete("admin/delete/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> AdminDeleteReservation(int id)
     {
+        var adminId = UserContextHelper.GetUserId(User)!.Value;
+
         try
         {
-            if (!ReservationValidator.ValidateReservationId(id))
-                return BadRequest(new { message = "Invalid reservation ID." });
-
-            var adminId = UserContextHelper.GetUserId(User);
-            if (adminId == null)
-            {
-                return Unauthorized(new { message = "Admin ID not found in token." });
-            }
-
-            await _service.DeleteReservationAsync(id, adminId.Value);
-
-            _logger.LogInformation("Admin {AdminId} successfully deleted reservation {ReservationId}.", adminId, id);
+            await _service.DeleteReservationAsync(id, adminId);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationDeleted,
-                    userId: adminId.Value,
-                    facilityId: null,
+                    UsageEventTypes.ReservationDeleted,
+                    userId: adminId,
                     metadata: new() { { "ReservationId", id.ToString() } }
                 )
             );
@@ -353,11 +240,6 @@ public class ReservationsController : ControllerBase
         catch (ArgumentException ex)
         {
             return BadRequest(new { message = ex.Message });
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deleting reservation {ReservationId} by admin.", id);
-            return StatusCode(500, new { message = "Internal server error while deleting reservation." });
         }
     }
 }

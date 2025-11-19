@@ -1,8 +1,6 @@
 using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Helpers;
 using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
-using OSFRS.Backend.Repositories;
 using OSFRS.Backend.Validators;
 using OSFRS.Models.Entities;
 
@@ -10,16 +8,20 @@ namespace OSFRS.Backend.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtTokenGenerator _jwtGenerator;
+    private readonly IUserRepository _repo;
+    private readonly IPasswordHasher _hasher;
+    private readonly IJwtTokenGenerator _jwt;
     private readonly IAppLogger<AuthService> _logger;
 
-    public AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher, IJwtTokenGenerator jwtGenerator, IAppLogger<AuthService> logger)
+    public AuthService(
+        IUserRepository repo,
+        IPasswordHasher hasher,
+        IJwtTokenGenerator jwt,
+        IAppLogger<AuthService> logger) 
     {
-        _userRepository = userRepository;
-        _passwordHasher = passwordHasher;
-        _jwtGenerator = jwtGenerator;
+        _repo = repo;
+        _hasher = hasher;
+        _jwt = jwt;
         _logger = logger;
     }
 
@@ -27,7 +29,6 @@ public class AuthService : IAuthService
     {
         _logger.LogInformation("Login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
 
-        // Validate credentials
         if (!UserValidator.ValidateUsername(dto.UsernameOrEmail)
             && !UserValidator.ValidateEmail(dto.UsernameOrEmail))
         {
@@ -40,16 +41,14 @@ public class AuthService : IAuthService
             throw new ArgumentException("Invalid password.");
         }
 
-        // Fetch user
-        User? user = await _userRepository.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
+        User? user = await _repo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
         if (user == null)
         {
             _logger.LogWarning("Invalid login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
             throw new Exception("Invalid credentials.");
         }
 
-        // Compare password
-        if (!_passwordHasher.Verify(dto.Password, user.PasswordHash))
+        if (!_hasher.Verify(dto.Password, user.PasswordHash))
         {
             _logger.LogWarning("Invalid login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
             throw new Exception("Invalid credentials.");
@@ -57,8 +56,7 @@ public class AuthService : IAuthService
 
         _logger.LogInformation("Login successful for {Username}", user.Username);
 
-        // Generate JWT
-        string token = _jwtGenerator.GenerateToken(user);
+        string token = _jwt.GenerateToken(user);
 
         return token;
     }
@@ -69,23 +67,18 @@ public class AuthService : IAuthService
         {
             _logger.LogInformation("Starting user registration for {Email}", dto.Email);
 
-            // Validation
             if (!UserValidator.ValidateName(dto.Name)) throw new ArgumentException("Invalid name.");
             if (!UserValidator.ValidateUsername(dto.Username)) throw new ArgumentException("Invalid username.");
             if (!UserValidator.ValidateEmail(dto.Email)) throw new ArgumentException("Invalid email.");
             if (!UserValidator.ValidatePassword(dto.Password)) throw new ArgumentException("Invalid password.");
 
-            // Check Duplicates
-            if (await _userRepository.EmailExistsAsync(dto.Email)) throw new InvalidOperationException("Email address is already in use.");
-            if (await _userRepository.UsernameExistsAsync(dto.Username)) throw new InvalidOperationException("Username is already in use.");
+            if (await _repo.EmailExistsAsync(dto.Email)) throw new InvalidOperationException("Email address is already in use.");
+            if (await _repo.UsernameExistsAsync(dto.Username)) throw new InvalidOperationException("Username is already in use.");
 
-            // Assign Default Role
             var role = "User";
 
-            // Hash Password
-            var passwordHash = _passwordHasher.Hash(dto.Password);
+            var passwordHash = _hasher.Hash(dto.Password);
 
-            // Create entity
             var user = new User
             {
                 Name = dto.Name,
@@ -97,8 +90,8 @@ public class AuthService : IAuthService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            // Save to db
-            await _userRepository.AddUserAsync(user);
+            await _repo.AddAsync(user);
+            await _repo.SaveChangesAsync();
 
             _logger.LogInformation("User {Email} registered successfully.", dto.Email);
         }

@@ -16,7 +16,6 @@ public class AuthController : ControllerBase
         _service = authService;
     }
 
-    //POST: api/auth/register
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] UserRegistrationDto dto)
     {
@@ -31,7 +30,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    // POST: api/auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
     {

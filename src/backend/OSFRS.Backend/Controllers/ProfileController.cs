@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using OSFRS.Backend.Services;
 using OSFRS.Backend.DTOs;
 using OSFRS.Backend.Interfaces;
+using OSFRS.Backend.Helpers.Auth;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -20,29 +21,26 @@ public class ProfileController : ControllerBase
         _service = service;
     }
 
-    // GET: api/profile
     [HttpGet]
     public async Task<IActionResult> GetProfile()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim == null) return Unauthorized("Invalid token.");
+        var userId = UserContextHelper.GetUserId(User)!.Value;
 
-        int userId = int.Parse(userIdClaim);
-
-        var profile = await _service.GetProfileAsync(userId);
-        if (profile == null) throw new Exception("User not found.");
-
-        return Ok(profile);
+        try
+        {
+            var profile = await _service.GetProfileAsync(userId);
+            return Ok(profile);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
-    // PUT: api/profile
     [HttpPut]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdatedProfileDto dto)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim == null) return Unauthorized("Invalid token.");
-
-        int userId = int.Parse(userIdClaim);
+        var userId = UserContextHelper.GetUserId(User)!.Value;
 
         try
         {
@@ -53,7 +51,7 @@ public class ProfileController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch(InvalidOperationException ex)
+        catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
         }

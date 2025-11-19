@@ -17,31 +17,32 @@ public class ReportService : IReportService
         _logger = logger;
     }
 
-    public async Task<byte[]> ExportCsvAsync(DateTime? date = null)
+    private async Task<(IEnumerable<UsageRecord> daily, IEnumerable<UsageRecord> monthly)>
+    GetAggregatesForDateAsync(DateTime? date = null)
     {
         var targetDate = date?.Date ?? DateTime.UtcNow.Date;
 
         var daily = await _repo.GetDailyAggregatesAsync(targetDate);
         var monthly = await _repo.GetMonthlyAggregatesAsync(targetDate.Year, targetDate.Month);
 
+        return (daily, monthly);
+    }
+
+    public async Task<byte[]> ExportCsvAsync(DateTime? date = null)
+    {
+        var (daily, monthly) = await GetAggregatesForDateAsync(date);
         var report = ReportFormatter.FormatAggregates(daily, monthly);
 
         _logger.LogInformation("Exporting CSV report...");
-
         return ReportFormatter.ToCsv(report);
     }
 
     public async Task<byte[]> ExportPdfAsync(DateTime? date = null)
     {
-        var targetDate = date?.Date ?? DateTime.UtcNow.Date;
-
-        var daily = await _repo.GetDailyAggregatesAsync(targetDate);
-        var monthly = await _repo.GetMonthlyAggregatesAsync(targetDate.Year, targetDate.Month);
-
+        var (daily, monthly) = await GetAggregatesForDateAsync(date);
         var report = ReportFormatter.FormatAggregates(daily, monthly);
 
         _logger.LogInformation("Exporting PDF report...");
-
         return ReportFormatter.ToPdf(report);
     }
 

@@ -9,56 +9,34 @@ using OSFRS.Backend.Interfaces.Logging;
 namespace OSFRS.Backend.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class FacilityController : ControllerBase
 {
-    private readonly IFacilityService _service;
+    private readonly IFacilityService _facility;
     private readonly IUsageService _usage;
-    private readonly IAppLogger<FacilityController> _logger;
 
-    public FacilityController(IFacilityService service, IUsageService usage, IAppLogger<FacilityController> logger)
+    public FacilityController(IFacilityService facility, IUsageService usage)
     {
-        _service = service;
+        _facility = facility;
         _usage = usage;
-        _logger = logger;
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> GetAll()
     {
-        try
-        {
-            var facilities = await _service.GetAllFacilitiesAsync();
-            if (!facilities.Any())
-                return NotFound(new { message = "No facilities found." });
-
-            return Ok(facilities);
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching facilities.");
-            return StatusCode(500, "Internal server error.");
-        }
+        var facilities = await _facility.GetAllAsync();
+        return Ok(facilities);
     }
 
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
-        try
-        {
-            var facility = await _service.GetFacilityByIdAsync(id);
-            if (facility == null)
-                return NotFound(new { message = $"Facility with ID {id} not found." });
+        var facility = await _facility.GetByIdAsync(id);
+        if (facility is null)
+            return NotFound(new { message = $"Facility with ID {id} not found." });
 
-            return Ok(facility);
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching facility {Id}", id);
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        return Ok(facility);
     }
 
     [HttpPost]
@@ -67,29 +45,21 @@ public class FacilityController : ControllerBase
     {
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var created = await _service.CreateFacilityAsync(dto);
+            var created = await _facility.CreateAsync(dto);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
                     UsageEventTypes.FacilityCreated,
                     userId: UserContextHelper.GetUserId(User),
-                    facilityId: created!.Id
+                    facilityId: created.Id
                 )
-            );  
+            );
 
-            return Ok(created);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ArgumentException ex)
         {
             return BadRequest(new { message = ex.Message });
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error creating facility.");
-            return StatusCode(500, "Internal server error.");
         }
     }
 
@@ -99,10 +69,7 @@ public class FacilityController : ControllerBase
     {
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var updated = await _service.UpdateFacilityAsync(id, dto);
+            var updated = await _facility.UpdateAsync(id, dto);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
@@ -122,11 +89,6 @@ public class FacilityController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error updating facility {Id}", id);
-            return StatusCode(500, "Internal server error.");
-        }
     }
 
     [HttpDelete("{id}")]
@@ -135,8 +97,8 @@ public class FacilityController : ControllerBase
     {
         try
         {
-            var success = await _service.DeleteFacilityAsync(id);
-            if (!success)
+            var deleted = await _facility.DeleteAsync(id);
+            if (!deleted)
                 return NotFound(new { message = $"Facility with ID {id} not found." });
 
             await _usage.LogEventAsync(
@@ -149,9 +111,8 @@ public class FacilityController : ControllerBase
 
             return Ok(new { message = "Facility deleted successfully." });
         }
-        catch (Exception ex)
+        catch
         {
-            _logger.LogError(ex, "Error deleting facility {Id}", id);
             return StatusCode(500, "Internal server error.");
         }
     }
@@ -162,17 +123,12 @@ public class FacilityController : ControllerBase
     {
         try
         {
-            var available = await _service.IsFacilityAvailableAsync(id);
+            var available = await _facility.IsFacilityAvailableAsync(id);
             return Ok(new { FacilityId = id, IsAvailable = available });
         }
         catch (InvalidOperationException ex)
         {
             return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking availability for facility {Id}", id);
-            return StatusCode(500, "Internal server error.");
         }
     }
 
@@ -182,14 +138,14 @@ public class FacilityController : ControllerBase
     {
         try
         {
-            await _service.UpdateAvailabilityAsync(id, availability);
+            await _facility.UpdateAvailabilityAsync(id, availability);
 
             await _usage.LogEventAsync(
                 UsageEventBuilder.Create(
                     UsageEventTypes.FacilityAvailabilityChanged,
                     userId: UserContextHelper.GetUserId(User),
                     facilityId: id,
-                    metadata: new Dictionary<string,string>
+                    metadata: new Dictionary<string, string>
                     {
                         ["NewAvailability"] = availability.ToString()
                     }
@@ -201,11 +157,6 @@ public class FacilityController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return NotFound(new { message = ex.Message });
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error updating availability for Facility {Id}", id);
-            return StatusCode(500, "Internal server error.");
         }
     }
 }

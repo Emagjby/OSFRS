@@ -201,42 +201,42 @@ public class StatisticsController : ControllerBase
     public async Task<IActionResult> GetPeakUsage(
     [FromQuery] DateTime? from,
     [FromQuery] DateTime? to)
-{
-    try
     {
-        if (from is null || to is null)
-            return BadRequest("Both 'from' and 'to' are required.");
+        try
+        {
+            if (from is null || to is null)
+                return BadRequest("Both 'from' and 'to' are required.");
 
-        var peak = await _analytics.GetPeakUsageAsync(from.Value, to.Value);
-        return Ok(peak);
+            var peak = await _analytics.GetPeakUsageAsync(from.Value, to.Value);
+            return Ok(peak);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error computing peak usage");
+            return StatusCode(500, "Internal server error.");
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error computing peak usage");
-        return StatusCode(500, "Internal server error.");
-    }
-}
 
-[HttpGet("analytics/anomalies")]
-public async Task<IActionResult> DetectAnomalies(
-    [FromQuery] DateTime? from,
-    [FromQuery] DateTime? to,
-    [FromQuery] string mode = "z-score")
-{
-    try
+    [HttpGet("analytics/anomalies")]
+    public async Task<IActionResult> DetectAnomalies(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] string mode = "z-score")
     {
-        if (from is null || to is null)
-            return BadRequest("Both 'from' and 'to' are required.");
+        try
+        {
+            if (from is null || to is null)
+                return BadRequest("Both 'from' and 'to' are required.");
 
-        var result = await _analytics.DetectAnomaliesAsync(from.Value, to.Value, mode);
-        return Ok(result);
+            var result = await _analytics.DetectAnomaliesAsync(from.Value, to.Value, mode);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error detecting anomalies");
+            return StatusCode(500, "Internal server error.");
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error detecting anomalies");
-        return StatusCode(500, "Internal server error.");
-    }
-}
 
     [HttpGet("analytics/visualization")]
     public async Task<IActionResult> GetVisualizationData(
