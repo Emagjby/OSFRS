@@ -3,7 +3,7 @@ using OSFRS.Backend.Helpers.Usage;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
-using OSFRS.Backend.Validators;
+using OSFRS.Backend.Validators.Usage;
 using OSFRS.Models.Entities;
 using System.Text.Json;
 
@@ -13,13 +13,16 @@ public class UsageService : IUsageService
 {
     private readonly IUsageRepository _repo;
     private readonly IAppLogger<UsageService> _logger;
+    private readonly UsageQueryValidator _validator;
 
     public UsageService(
         IUsageRepository repo,
-        IAppLogger<UsageService> logger)
+        IAppLogger<UsageService> logger,
+        UsageQueryValidator validator)
     {
         _repo = repo;
         _logger = logger;
+        _validator = validator;
     }
 
     public async Task AggregateAsync()
@@ -44,21 +47,15 @@ public class UsageService : IUsageService
 
     public async Task BulkLogAsync(IEnumerable<UsageEventDto> dtos)
     {
-        var usageRecords = dtos.Select(dto =>
+        var usageRecords = dtos.Select(dto => new UsageRecord
         {
-            if (!UsageEventValidator.Validate(dto))
-                throw new ArgumentException("Invalid dto.");
-
-            return new UsageRecord
-            {
-                EventType = dto.EventType,
-                UserId = dto.UserId,
-                FacilityId = dto.FacilityId,
-                Timestamp = dto.Timestamp,
-                AggregatedData = dto.Metadata is not null
-                    ? JsonSerializer.Serialize(dto.Metadata)
-                    : null
-            };
+            EventType = dto.EventType,
+            UserId = dto.UserId,
+            FacilityId = dto.FacilityId,
+            Timestamp = dto.Timestamp,
+            AggregatedData = dto.Metadata is not null
+                ? JsonSerializer.Serialize(dto.Metadata)
+                : null
         }).ToList();
 
         await _repo.AddRangeAsync(usageRecords);
@@ -83,6 +80,8 @@ public class UsageService : IUsageService
         DateTime? start = null,
         DateTime? end = null)
     {
+        _validator.Validate(eventType, userId, facilityId, start, end);
+
         var events = await _repo.QueryAsync(eventType, userId, facilityId, start, end);
 
         _logger.LogInformation(
@@ -95,9 +94,6 @@ public class UsageService : IUsageService
 
     public async Task LogEventAsync(UsageEventDto dto)
     {
-        if (!UsageEventValidator.Validate(dto))
-            throw new ArgumentException("Invalid dto.");
-
         var usageRecord = new UsageRecord
         {
             EventType = dto.EventType,

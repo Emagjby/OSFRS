@@ -1,9 +1,10 @@
 using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Helper;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
-using OSFRS.Backend.Validators;
+using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
@@ -15,92 +16,70 @@ public class AuthService : IAuthService
     private readonly IJwtTokenGenerator _jwt;
     private readonly IAppLogger<AuthService> _logger;
 
+    private readonly IValidator<LoginRequestDto> _loginValidator;
+    private readonly IValidator<UserRegistrationDto> _registrationValidator;
+
     public AuthService(
         IUserRepository repo,
         IPasswordHasher hasher,
         IJwtTokenGenerator jwt,
-        IAppLogger<AuthService> logger)
+        IAppLogger<AuthService> logger,
+        IValidator<LoginRequestDto> loginValidator,
+        IValidator<UserRegistrationDto> registrationValidator)
     {
         _repo = repo;
         _hasher = hasher;
         _jwt = jwt;
         _logger = logger;
+        _loginValidator = loginValidator;
+        _registrationValidator = registrationValidator;
     }
 
     public async Task<string> LoginAsync(LoginRequestDto dto)
     {
+        await _loginValidator.ValidateAsync(dto);
+
         _logger.LogInformation("Login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
 
-        if (!UserValidator.ValidateUsername(dto.UsernameOrEmail)
-            && !UserValidator.ValidateEmail(dto.UsernameOrEmail))
+        var user = await _repo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
+        if (user is null)
         {
-            _logger.LogWarning("Invalid login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
-            throw new ArgumentException("Invalid username or email.");
-        }
-        if (!UserValidator.ValidatePassword(dto.Password))
-        {
-            _logger.LogWarning("Invalid login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
-            throw new ArgumentException("Invalid password.");
+            _logger.LogWarning("Invalid login attempt for {UsernameOrEmail} - user not found", dto.UsernameOrEmail);
+            throw new ValidationException("Invalid credentials.");
         }
 
-        User? user = await _repo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
-        if (user == null)
+        if (!_hasher.Verify(dto.Password, user!.PasswordHash))
         {
-            _logger.LogWarning("Invalid login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
-            throw new Exception("Invalid credentials.");
-        }
-
-        if (!_hasher.Verify(dto.Password, user.PasswordHash))
-        {
-            _logger.LogWarning("Invalid login attempt for {UsernameOrEmail}", dto.UsernameOrEmail);
-            throw new Exception("Invalid credentials.");
+            _logger.LogWarning("Invalid login attempt for {UsernameOrEmail} - wrong password", dto.UsernameOrEmail);
+            throw new ValidationException("Invalid credentials.");
         }
 
         _logger.LogInformation("Login successful for {Username}", user.Username);
 
-        string token = _jwt.GenerateToken(user);
-
+        var token = _jwt.GenerateToken(user);
         return token;
     }
 
     public async Task RegisterUserAsync(UserRegistrationDto dto)
     {
-        try
+        _logger.LogInformation("Starting user registration for {Email}", dto.Email);
+
+        await _registrationValidator.ValidateAsync(dto);
+
+        var user = new User
         {
-            _logger.LogInformation("Starting user registration for {Email}", dto.Email);
+            Name = dto.Name,
+            Username = dto.Username,
+            Email = dto.Email,
+            PasswordHash = _hasher.Hash(dto.Password),
+            Role = "User",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
 
-            if (!UserValidator.ValidateName(dto.Name)) throw new ArgumentException("Invalid name.");
-            if (!UserValidator.ValidateUsername(dto.Username)) throw new ArgumentException("Invalid username.");
-            if (!UserValidator.ValidateEmail(dto.Email)) throw new ArgumentException("Invalid email.");
-            if (!UserValidator.ValidatePassword(dto.Password)) throw new ArgumentException("Invalid password.");
+        await _repo.AddAsync(user);
+        await _repo.SaveChangesAsync();
 
-            if (await _repo.EmailExistsAsync(dto.Email)) throw new InvalidOperationException("Email address is already in use.");
-            if (await _repo.UsernameExistsAsync(dto.Username)) throw new InvalidOperationException("Username is already in use.");
-
-            var role = "User";
-
-            var passwordHash = _hasher.Hash(dto.Password);
-
-            var user = new User
-            {
-                Name = dto.Name,
-                Username = dto.Username,
-                Email = dto.Email,
-                PasswordHash = passwordHash,
-                Role = role,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            await _repo.AddAsync(user);
-            await _repo.SaveChangesAsync();
-
-            _logger.LogInformation("User {Email} registered successfully.", dto.Email);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred during user registration for {Email}", dto.Email);
-            throw;
-        }
+        _logger.LogInformation("User {Email} registered successfully.", dto.Email);
     }
 }

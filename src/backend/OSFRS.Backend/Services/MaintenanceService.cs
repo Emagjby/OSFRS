@@ -1,7 +1,9 @@
 using OSFRS.Backend.DTOs.Maintenance;
+using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
+using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
@@ -12,15 +14,22 @@ public class MaintenanceService : IMaintenanceService
     private readonly IFacilityRepository _facilityRepo;
     private readonly IAppLogger<MaintenanceService> _logger;
 
+    private readonly IValidator<CreateMaintenanceRecordDto> _createValidator;
+    private readonly IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord> _updateValidator;
+
     public MaintenanceService(
         IMaintenanceRepository repo,
         IFacilityRepository facilityRepo,
-        IAppLogger<MaintenanceService> logger
+        IAppLogger<MaintenanceService> logger,
+        IValidator<CreateMaintenanceRecordDto> createValidator,
+        IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord> updateValidator
     )
     {
         _repo = repo;
         _facilityRepo = facilityRepo;
         _logger = logger;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
     }
 
     public async Task<bool> DeleteMaintenanceAsync(int id)
@@ -36,22 +45,18 @@ public class MaintenanceService : IMaintenanceService
         await _repo.SaveChangesAsync();
 
         _logger.LogInformation("Deleted maintenance record ID {Id}.", id);
-
         return true;
     }
 
     public async Task<IEnumerable<MaintenanceRecord>> GetMaintenanceByFacilityAsync(int facilityId)
     {
-        var facility = await _facilityRepo.GetByIdAsync(facilityId);
-        if (facility is null)
-        {
-            _logger.LogWarning("Attempted to fetch maintenance for non-existent facility ID {FacilityId}.", facilityId);
-            throw new InvalidOperationException("Facility not found.");
-        }
+        if (await _facilityRepo.GetByIdAsync(facilityId) is null)
+            throw new NotFoundException("Facility not found.");
 
         var records = await _repo.GetByFacilityAsync(facilityId);
+
         _logger.LogInformation(
-            "Fetched {Count} maintenance records for facility ID {FacilityId}.",
+            "Fetched {Count} maintenance records for facility {FacilityId}",
             records.Count(),
             facilityId
         );
@@ -62,21 +67,17 @@ public class MaintenanceService : IMaintenanceService
     public async Task<IEnumerable<MaintenanceRecord>> GetUpcomingMaintenanceAsync()
     {
         var records = await _repo.GetUpcomingAsync();
+
         _logger.LogInformation("Fetched {Count} upcoming maintenance records.", records.Count());
         return records;
     }
 
     public async Task<MaintenanceRecord> ScheduleMaintenanceAsync(CreateMaintenanceRecordDto dto)
     {
-        var facility = await _facilityRepo.GetByIdAsync(dto.FacilityId);
-        if (facility is null)
-        {
-            _logger.LogWarning("Attempted to schedule maintenance for non-existent facility ID {FacilityId}.", dto.FacilityId);
-            throw new InvalidOperationException("Facility not found.");
-        }
+        await _createValidator.ValidateAsync(dto);
 
-        if (dto.EndTime <= dto.StartTime)
-            throw new ArgumentException("End time must be after start time");
+        if (await _facilityRepo.GetByIdAsync(dto.FacilityId) is null)
+            throw new NotFoundException("Facility not found.");
 
         var entity = new MaintenanceRecord
         {
@@ -151,37 +152,25 @@ public class MaintenanceService : IMaintenanceService
 
     public async Task<MaintenanceRecord?> UpdateMaintenanceAsync(int id, UpdateMaintenanceRecordDto dto)
     {
-        var entity = await _repo.GetByIdAsync(id);
-        if (entity is null)
-        {
-            _logger.LogWarning("Attempted to update non-existent maintenance record ID {Id}.", id);
-            throw new InvalidOperationException("Maintenance record not found.");
-        }
+        var existing = await _repo.GetByIdAsync(id)
+                        ?? throw new NotFoundException("Maintenance record not found.");
 
-        if (dto.EndTime <= dto.StartTime && dto.EndTime != default)
-            throw new ArgumentException("End time must be after start time");
+        await _updateValidator.ValidateAsync(dto, existing);
 
+        existing.Description = dto.Description ?? existing.Description;
+        existing.StartTime = dto.StartTime ?? existing.StartTime;
+        existing.EndTime = dto.EndTime ?? existing.EndTime;
+        existing.Status = dto.Status ?? existing.Status;
+        existing.UpdatedAt = DateTime.UtcNow;
 
-        entity.Description = dto.Description ?? entity.Description;
-
-        if (dto.StartTime.HasValue)
-            entity.StartTime = dto.StartTime.Value;
-
-        if (dto.EndTime.HasValue)
-            entity.EndTime = dto.EndTime.Value;
-
-        entity.Status = dto.Status ?? entity.Status;
-        entity.UpdatedAt = DateTime.UtcNow;
-
-        _repo.Update(entity);
+        _repo.Update(existing);
         await _repo.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Updated maintenance record ID {Id} for facility ID {FacilityId}.",
-            entity.Id,
-            entity.FacilityId
+            "Updated maintenance record {Id} for facility {FacilityId}",
+            existing.Id, existing.FacilityId
         );
 
-        return entity;
+        return existing;
     }
 }

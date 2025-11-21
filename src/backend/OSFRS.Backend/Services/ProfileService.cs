@@ -1,9 +1,11 @@
-using OSFRS.Backend.Validators;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Backend.Interfaces.Helper;
 using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Models.Entities;
+using OSFRS.Backend.Exceptions;
 
 namespace OSFRS.Backend.Services;
 
@@ -12,16 +14,19 @@ public class ProfileService : IProfileService
     private readonly IUserRepository _repo;
     private readonly IPasswordHasher _pass;
     private readonly IAppLogger<ProfileService> _logger;
+    private readonly IUpdateValidator<UpdatedProfileDto, User> _validator;
 
     public ProfileService(
         IUserRepository repo,
         IPasswordHasher hasher,
-        IAppLogger<ProfileService> logger
+        IAppLogger<ProfileService> logger,
+        IUpdateValidator<UpdatedProfileDto, User> validator
     )
     {
         _repo = repo;
         _pass = hasher;
         _logger = logger;
+        _validator = validator;
     }
 
     public async Task<UserProfileDto> GetProfileAsync(int userId)
@@ -29,11 +34,8 @@ public class ProfileService : IProfileService
         var user = await _repo.GetByIdAsync(userId);
         if (user is null)
         {
-            _logger.LogWarning($"Profile fetch failed: user {userId} not found.");
             throw new Exception("User not found.");
         }
-
-        _logger.LogInformation($"Profile fetched for userId: {userId}");
 
         return new UserProfileDto
         {
@@ -49,49 +51,31 @@ public class ProfileService : IProfileService
 
     public async Task UpdateProfileAsync(int userId, UpdatedProfileDto dto)
     {
-        _logger.LogInformation($"Starting profile update for userId: {userId}");
+        _logger.LogInformation("Updating profile for User {UserId}", userId);
 
-        try
-        {
-            var user = await _repo.GetByIdAsync(userId);
-            if (user is null) throw new Exception("User not found.");
+        var user = await _repo.GetByIdAsync(userId);
+        if (user is null)
+            throw new NotFoundException("User not found.");
 
-            if (!UserValidator.ValidateName(dto.Name)) throw new ArgumentException("Invalid name.");
-            if (!UserValidator.ValidateUsername(dto.Username)) throw new ArgumentException("Invalid username.");
-            if (!UserValidator.ValidateEmail(dto.Email)) throw new ArgumentException("Invalid email.");
-            if (dto.Password is not null && !UserValidator.ValidatePassword(dto.Password)) throw new ArgumentException("Invalid password.");
+        await _validator.ValidateAsync(dto, user);
 
-            if (!string.Equals(user.Username, dto.Username, StringComparison.OrdinalIgnoreCase))
-            {
-                var existingUser = await _repo.GetByUsernameAsync(dto.Username);
-                if (existingUser is not null && existingUser.Id != user.Id)
-                    throw new InvalidOperationException("Username is already taken.");
-            }
-
-            if (!string.Equals(user.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
-            {
-                var existingUser = await _repo.GetByEmailAsync(dto.Email);
-                if (existingUser is not null && existingUser.Id != user.Id)
-                    throw new InvalidOperationException("Email is already taken.");
-            }
-
+        if (dto.Name is not null)
             user.Name = dto.Name;
+
+        if (dto.Username is not null)
             user.Username = dto.Username;
+
+        if (dto.Email is not null)
             user.Email = dto.Email;
-            user.UpdatedAt = DateTime.UtcNow;
 
-            if (!string.IsNullOrWhiteSpace(dto.Password))
-                user.PasswordHash = _pass.Hash(dto.Password);
+        if (dto.Password is not null)
+            user.PasswordHash = _pass.Hash(dto.Password);
 
-            _repo.Update(user);
-            await _repo.SaveChangesAsync();
+        user.UpdatedAt = DateTime.UtcNow;
 
-            _logger.LogInformation($"Profile updated successfully for userId: {userId}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Profile update failed for userId: {userId}");
-            throw;
-        }
+        _repo.Update(user);
+        await _repo.SaveChangesAsync();
+
+        _logger.LogInformation("Profile updated successfully for User {UserId}", userId);
     }
 }

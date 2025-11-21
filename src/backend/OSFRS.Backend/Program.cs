@@ -14,6 +14,18 @@ using Hangfire.PostgreSql;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Interfaces.Helper;
+using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Backend.Interfaces.Validator;
+using OSFRS.Backend.Validators.Auth;
+using OSFRS.Models.Entities;
+using OSFRS.Backend.DTOs.Facilities;
+using OSFRS.Backend.Validators.Facilities;
+using OSFRS.Backend.Validators.Reservations;
+using OSFRS.Backend.DTOs.Reservations;
+using OSFRS.Backend.DTOs.Reports;
+using OSFRS.Backend.Validators.Usage;
+using OSFRS.Backend.Validators.Maintenance;
+using OSFRS.Backend.DTOs.Maintenance;
 
 Env.Load();
 
@@ -35,6 +47,9 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
 }
 
 // Dependency Injection
+builder.Services.AddScoped<FacilityAvailabilityValidator>();
+builder.Services.AddScoped<CancelReservationValidator>();
+builder.Services.AddScoped<UsageQueryValidator>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -52,6 +67,15 @@ builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IValidator<LoginRequestDto>, UserLoginValidator>();
+builder.Services.AddScoped<IValidator<UserRegistrationDto>, UserRegistrationValidator>();
+builder.Services.AddScoped<IValidator<CreateFacilityDto>, CreateFacilityValidator>();
+builder.Services.AddScoped<IValidator<(CreateReservationDto, int)>, CreateReservationValidator>();
+builder.Services.AddScoped<IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)>, UpdateReservationValidator>();
+builder.Services.AddScoped<IValidator<CreateMaintenanceRecordDto>, CreateMaintenanceValidator>();
+builder.Services.AddScoped<IUpdateValidator<UpdatedProfileDto, User>, ProfileUpdateValidator>();
+builder.Services.AddScoped<IUpdateValidator<UpdateFacilityDto, Facility>, UpdateFacilityValidator>();
+builder.Services.AddScoped<IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord>, UpdateMaintenanceValidator>();
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Hangfire setup
@@ -99,7 +123,7 @@ using (var scope = app.Services.CreateScope())
     jobManager.AddOrUpdate<IUsageService>(
         "daily-usage-aggregation",
         service => service.AggregateAsync(),
-        "5 0 * * *"   // every day at 00:05 UTC
+        "55 23 * * *"
     );
 
     jobManager.AddOrUpdate<IMaintenanceService>(

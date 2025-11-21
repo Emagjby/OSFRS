@@ -1,8 +1,10 @@
 using OSFRS.Backend.DTOs.Facilities;
+using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
-using OSFRS.Backend.Validators;
+using OSFRS.Backend.Interfaces.Validator;
+using OSFRS.Backend.Validators.Facilities;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
@@ -14,9 +16,16 @@ public class FacilityService
     private new readonly IFacilityRepository _repo;
     private readonly IAppLogger<FacilityService> _logger;
 
+    private readonly IValidator<CreateFacilityDto> _createValidator;
+    private readonly IUpdateValidator<UpdateFacilityDto, Facility> _updateValidator;
+    private readonly FacilityAvailabilityValidator _availabilityValidator;
+
     public FacilityService(
         IFacilityRepository repo,
-        IAppLogger<FacilityService> logger
+        IAppLogger<FacilityService> logger,
+        IValidator<CreateFacilityDto> createValidator,
+        IUpdateValidator<UpdateFacilityDto, Facility> updateValidator,
+        FacilityAvailabilityValidator availabilityValidator
     ) : base(
         repo,
         MapToDto,
@@ -26,6 +35,9 @@ public class FacilityService
     {
         _repo = repo;
         _logger = logger;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
+        _availabilityValidator = availabilityValidator;
     }
 
     private new static FacilityDto MapToDto(Facility f) =>
@@ -51,21 +63,58 @@ public class FacilityService
 
     private static void ApplyUpdate(Facility entity, UpdateFacilityDto dto)
     {
-        entity.Name = dto.Name ?? entity.Name;
-        entity.Type = dto.Type ?? entity.Type;
-        entity.Capacity = dto.Capacity ?? entity.Capacity;
-        entity.Status = dto.Status ?? entity.Status;
+        if (dto.Name is not null) entity.Name = dto.Name;
+        if (dto.Type is not null) entity.Type = dto.Type;
+        if (dto.Capacity is not null) entity.Capacity = dto.Capacity.Value;
+        if (dto.Status is not null) entity.Status = dto.Status;
+
         entity.UpdatedAt = DateTime.UtcNow;
     }
 
     public override async Task<FacilityDto> CreateAsync(CreateFacilityDto dto, CancellationToken cancellationToken = default)
     {
-        if (!FacilityValidator.ValidateCreate(dto, out var error))
-            throw new ArgumentException(error);
+        await _createValidator.ValidateAsync(dto);
 
         _logger.LogInformation("Creating facility {Name}", dto.Name);
 
         return await base.CreateAsync(dto, cancellationToken);
+    }
+
+    public async Task<FacilityDto?> UpdateFacilityAsync(
+        int id,
+        UpdateFacilityDto dto,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var existing = await _repo.GetByIdAsync(id);
+        if (existing is null)
+            throw new NotFoundException("Facility not found.");
+
+        await _updateValidator.ValidateAsync(dto, existing);
+
+        _logger.LogInformation("Updated facility {Id}", id);
+
+        return await base.UpdateAsync(id, dto, cancellationToken);
+    }
+
+    public async Task<bool> UpdateAvailabilityAsync(int facilityId, bool isAvailable)
+    {
+        var existing = await _repo.GetByIdAsync(facilityId);
+        if (existing is null)
+            throw new NotFoundException("Facility not found.");
+
+        await _availabilityValidator.ValidateAsync(existing, isAvailable);
+
+        await _repo.UpdateAvailabilityAsync(facilityId, isAvailable);
+        await _repo.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Facility {Id} marked as {Status}",
+            facilityId,
+            isAvailable ? "Available" : "Unavailable"
+        );
+
+        return isAvailable;
     }
 
     public override async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -102,44 +151,5 @@ public class FacilityService
         return facility;
     }
 
-    public async Task<bool> IsFacilityAvailableAsync(int facilityId)
-    {
-        return await _repo.IsFacilityAvailableAsync(facilityId);
-    }
-
-    public async Task<bool> UpdateAvailabilityAsync(int facilityId, bool isAvailable)
-    {
-        var existing = await _repo.GetByIdAsync(facilityId);
-        if (existing is null)
-            throw new InvalidOperationException("Facility not found.");
-
-        await _repo.UpdateAvailabilityAsync(facilityId, isAvailable);
-        await _repo.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Facility {Id} marked as {Status}",
-            facilityId,
-            isAvailable ? "Available" : "Unavailable"
-        );
-
-        return isAvailable;
-    }
-
-    public async Task<FacilityDto?> UpdateFacilityAsync(
-        int id,
-        UpdateFacilityDto dto,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var existing = await _repo.GetByIdAsync(id);
-        if (existing is null)
-            throw new InvalidOperationException("Facility not found.");
-
-        if (!FacilityValidator.ValidateUpdate(dto, existing, out var error))
-            throw new ArgumentException(error);
-
-        _logger.LogInformation("Updated facility {Id}", id);
-
-        return await base.UpdateAsync(id, dto, cancellationToken);
-    }
+    public async Task<bool> IsFacilityAvailableAsync(int facilityId) => await _repo.IsFacilityAvailableAsync(facilityId);
 }

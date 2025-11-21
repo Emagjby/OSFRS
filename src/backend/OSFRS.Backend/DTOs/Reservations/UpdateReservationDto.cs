@@ -1,4 +1,4 @@
-namespace OSFRS.Backend.DTOs.Reports;
+namespace OSFRS.Backend.DTOs.Reservations;
 
 public record UpdateReservationDto
 {

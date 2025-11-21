@@ -19,4 +19,22 @@ public class UsageEventTypes
 
     public const string StatusSyncRun = "StatusSyncRun";
     public const string AggregateComputed = "AggregateComputed";
+
+    public static readonly string[] All =
+    {
+        ReservationCreated,
+        ReservationUpdated,
+        ReservationCancelled,
+        ReservationDeleted,
+        ReservationAdminUpdated,
+        FacilityCreated,
+        FacilityUpdated,
+        FacilityDeleted,
+        FacilityAvailabilityChanged,
+        MaintenanceScheduled,
+        MaintenanceUpdated,
+        MaintenanceDeleted,
+        StatusSyncRun,
+        AggregateComputed
+    };
 }
