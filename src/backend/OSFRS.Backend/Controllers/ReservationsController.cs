@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using OSFRS.Backend.Helpers.Usage;
 using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.DTOs.Reservations;
-using OSFRS.Backend.DTOs.Reports;
 
 namespace OSFRS.Backend.Controllers;
 
@@ -24,30 +23,16 @@ public class ReservationsController : ControllerBase
     [HttpGet("availability/{facilityId}")]
     public async Task<IActionResult> GetAvailabilityCalendar(int facilityId, [FromQuery] DateTime? date)
     {
-        try
-        {
-            var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
-            return Ok(calendar);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
+        return Ok(calendar);
     }
 
     [Authorize(Roles = "Admin")]
     [HttpGet("facility/{facilityId}")]
     public async Task<IActionResult> GetReservations(int facilityId, [FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
-        try
-        {
-            var reservations = await _service.GetReservationsAsync(facilityId, start, end);
-            return Ok(reservations);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var reservations = await _service.GetReservationsAsync(facilityId, start, end);
+        return Ok(reservations);
     }
 
     [Authorize(Roles = "Admin")]
@@ -69,29 +54,18 @@ public class ReservationsController : ControllerBase
     {
         var userId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            var reservation = await _service.CreateReservationAsync(dto, userId);
+        var reservation = await _service.CreateReservationAsync(dto, userId);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.ReservationCreated,
-                    userId: userId,
-                    facilityId: reservation.FacilityId,
-                    metadata: new() { { "ReservationId", reservation.Id.ToString() } }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationCreated,
+                userId: userId,
+                facilityId: reservation.FacilityId,
+                metadata: new() { { "ReservationId", reservation.Id.ToString() } }
+            )
+        );
 
-            return Ok(reservation);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        return Ok(reservation);
     }
 
     [HttpPut("{id}")]
@@ -100,33 +74,18 @@ public class ReservationsController : ControllerBase
     {
         var userId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            var updated = await _service.UpdateReservationAsync(id, dto, userId);
+        var updated = await _service.UpdateReservationAsync(id, dto, userId);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.ReservationUpdated,
-                    userId: userId,
-                    facilityId: updated.FacilityId,
-                    metadata: new() { { "ReservationId", updated.Id.ToString() } }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationUpdated,
+                userId: userId,
+                facilityId: updated.FacilityId,
+                metadata: new() { { "ReservationId", updated.Id.ToString() } }
+            )
+        );
 
-            return Ok(updated);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        return Ok(updated);
     }
 
     [HttpPut("cancel/{id}")]
@@ -135,28 +94,17 @@ public class ReservationsController : ControllerBase
     {
         var userId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            await _service.CancelReservationAsync(id, userId);
+        await _service.CancelReservationAsync(id, userId);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.ReservationCancelled,
-                    userId: userId,
-                    metadata: new() { { "ReservationId", id.ToString() } }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationCancelled,
+                userId: userId,
+                metadata: new() { { "ReservationId", id.ToString() } }
+            )
+        );
 
-            return Ok(new { message = "Reservation cancelled successfully." });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        return Ok(new { message = "Reservation cancelled successfully." });
     }
 
     [Authorize]
@@ -183,33 +131,18 @@ public class ReservationsController : ControllerBase
     {
         var adminId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            var updated = await _service.AdminUpdateReservationAsync(id, dto, adminId);
+        var updated = await _service.AdminUpdateReservationAsync(id, dto, adminId);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.ReservationAdminUpdated,
-                    userId: adminId,
-                    facilityId: updated.FacilityId,
-                    metadata: new() { { "ReservationId", id.ToString() } }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationAdminUpdated,
+                userId: adminId,
+                facilityId: updated.FacilityId,
+                metadata: new() { { "ReservationId", id.ToString() } }
+            )
+        );
 
-            return Ok(updated);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        return Ok(updated);
     }
 
     [Authorize(Roles = "Admin")]
@@ -218,27 +151,16 @@ public class ReservationsController : ControllerBase
     {
         var adminId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            await _service.DeleteReservationAsync(id, adminId);
+        await _service.DeleteReservationAsync(id, adminId);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.ReservationDeleted,
-                    userId: adminId,
-                    metadata: new() { { "ReservationId", id.ToString() } }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationDeleted,
+                userId: adminId,
+                metadata: new() { { "ReservationId", id.ToString() } }
+            )
+        );
 
-            return Ok(new { message = "Reservation deleted successfully." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(new { message = "Reservation deleted successfully." });
     }
 }

@@ -42,120 +42,81 @@ public class FacilityController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateFacilityDto dto)
     {
-        try
-        {
-            var created = await _facility.CreateAsync(dto);
+        var created = await _facility.CreateAsync(dto);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.FacilityCreated,
-                    userId: UserContextHelper.GetUserId(User),
-                    facilityId: created.Id
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.FacilityCreated,
+                userId: UserContextHelper.GetUserId(User),
+                facilityId: created.Id
+            )
+        );
 
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateFacilityDto dto)
     {
-        try
-        {
-            var updated = await _facility.UpdateAsync(id, dto);
+        var updated = await _facility.UpdateAsync(id, dto);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.FacilityUpdated,
-                    userId: UserContextHelper.GetUserId(User),
-                    facilityId: id
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.FacilityUpdated,
+                userId: UserContextHelper.GetUserId(User),
+                facilityId: id
+            )
+        );
 
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(updated);
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        try
-        {
-            var deleted = await _facility.DeleteAsync(id);
-            if (!deleted)
-                return NotFound(new { message = $"Facility with ID {id} not found." });
+        var deleted = await _facility.DeleteAsync(id);
+        if (!deleted)
+            return NotFound(new { message = $"Facility with ID {id} not found." });
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.FacilityDeleted,
-                    userId: UserContextHelper.GetUserId(User),
-                    facilityId: id
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.FacilityDeleted,
+                userId: UserContextHelper.GetUserId(User),
+                facilityId: id
+            )
+        );
 
-            return Ok(new { message = "Facility deleted successfully." });
-        }
-        catch
-        {
-            return StatusCode(500, "Internal server error.");
-        }
+        return Ok(new { message = "Facility deleted successfully." });
     }
 
     [HttpGet("{id}/availability")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAvailability(int id)
     {
-        try
-        {
-            var available = await _facility.IsFacilityAvailableAsync(id);
-            return Ok(new { FacilityId = id, IsAvailable = available });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var available = await _facility.IsFacilityAvailableAsync(id);
+        return Ok(new { FacilityId = id, IsAvailable = available });
     }
 
     [HttpPatch("{id}/availability")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateAvailability(int id, [FromBody] bool availability)
     {
-        try
-        {
-            await _facility.UpdateAvailabilityAsync(id, availability);
+        await _facility.UpdateAvailabilityAsync(id, availability);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    UsageEventTypes.FacilityAvailabilityChanged,
-                    userId: UserContextHelper.GetUserId(User),
-                    facilityId: id,
-                    metadata: new Dictionary<string, string>
-                    {
-                        ["NewAvailability"] = availability.ToString()
-                    }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.FacilityAvailabilityChanged,
+                userId: UserContextHelper.GetUserId(User),
+                facilityId: id,
+                metadata: new Dictionary<string, string>
+                {
+                    ["NewAvailability"] = availability.ToString()
+                }
+            )
+        );
 
-            return Ok(new { message = "Facility availability updated successfully" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        return Ok(new { message = "Facility availability updated successfully" });
     }
 }

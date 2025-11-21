@@ -24,15 +24,8 @@ public class MaintenanceController : ControllerBase
     [HttpGet("facility/{facilityId}")]
     public async Task<IActionResult> GetMaintenanceByFacility(int facilityId)
     {
-        try
-        {
-            var records = await _service.GetMaintenanceByFacilityAsync(facilityId);
-            return Ok(records);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var records = await _service.GetMaintenanceByFacilityAsync(facilityId);
+        return Ok(records);
     }
 
     [HttpGet("upcoming")]
@@ -46,74 +39,45 @@ public class MaintenanceController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ScheduleMaintenance([FromBody] CreateMaintenanceRecordDto dto)
     {
-        try
-        {
-            var created = await _service.ScheduleMaintenanceAsync(dto);
+        var created = await _service.ScheduleMaintenanceAsync(dto);
 
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
-                eventType: UsageEventTypes.MaintenanceScheduled,
-                userId: null,
-                facilityId: created.FacilityId
-            ));
+        await _usage.LogEventAsync(UsageEventBuilder.Create(
+            eventType: UsageEventTypes.MaintenanceScheduled,
+            userId: null,
+            facilityId: created.FacilityId
+        ));
 
-            return Ok(created);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(created);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateMaintenance(int id, [FromBody] UpdateMaintenanceRecordDto dto)
     {
-        try
-        {
-            var updated = await _service.UpdateMaintenanceAsync(id, dto);
+        var updated = await _service.UpdateMaintenanceAsync(id, dto);
 
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
-                eventType: UsageEventTypes.MaintenanceUpdated,
-                userId: null,
-                facilityId: updated!.FacilityId
-            ));
+        await _usage.LogEventAsync(UsageEventBuilder.Create(
+            eventType: UsageEventTypes.MaintenanceUpdated,
+            userId: null,
+            facilityId: updated!.FacilityId
+        ));
 
-            return Ok(updated);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        return Ok(updated);
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteMaintenance(int id)
     {
-        try
-        {
-            var deleted = await _service.DeleteMaintenanceAsync(id);
-            if (!deleted)
-                return NotFound(new { message = "Maintenance record not found." });
+        var deleted = await _service.DeleteMaintenanceAsync(id);
+        if (!deleted)
+            return NotFound(new { message = "Maintenance record not found." });
 
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
-                UsageEventTypes.MaintenanceDeleted
-            ));
+        await _usage.LogEventAsync(UsageEventBuilder.Create(
+            UsageEventTypes.MaintenanceDeleted
+        ));
 
-            return Ok(new { message = "Maintenance record deleted successfully." });
-        }
-        catch
-        {
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        return Ok(new { message = "Maintenance record deleted successfully." });
     }
 
     [HttpPost("sync-statuses")]

@@ -23,15 +23,8 @@ public class ProfileController : ControllerBase
     {
         var userId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            var profile = await _service.GetProfileAsync(userId);
-            return Ok(profile);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var profile = await _service.GetProfileAsync(userId);
+        return Ok(profile);
     }
 
     [HttpPut]
@@ -39,18 +32,7 @@ public class ProfileController : ControllerBase
     {
         var userId = UserContextHelper.GetUserId(User)!.Value;
 
-        try
-        {
-            await _service.UpdateProfileAsync(userId, dto);
-            return Ok(new { message = "Profile updated successfully." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        await _service.UpdateProfileAsync(userId, dto);
+        return Ok(new { message = "Profile updated successfully." });
     }
 }

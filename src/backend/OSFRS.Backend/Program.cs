@@ -26,6 +26,8 @@ using OSFRS.Backend.DTOs.Reports;
 using OSFRS.Backend.Validators.Usage;
 using OSFRS.Backend.Validators.Maintenance;
 using OSFRS.Backend.DTOs.Maintenance;
+using OSFRS.Backend.Middleware;
+using Microsoft.AspNetCore.Mvc;
 
 Env.Load();
 
@@ -76,7 +78,8 @@ builder.Services.AddScoped<IValidator<CreateMaintenanceRecordDto>, CreateMainten
 builder.Services.AddScoped<IUpdateValidator<UpdatedProfileDto, User>, ProfileUpdateValidator>();
 builder.Services.AddScoped<IUpdateValidator<UpdateFacilityDto, Facility>, UpdateFacilityValidator>();
 builder.Services.AddScoped<IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord>, UpdateMaintenanceValidator>();
-builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+
+builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Hangfire setup
 builder.Services.AddHangfire((sp, config) =>
@@ -114,6 +117,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value!.Errors.Any())
+            .Select(x => x.Value!.Errors.First().ErrorMessage)
+            .ToArray();
+
+        return new BadRequestObjectResult(errors);
+    };
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -134,6 +150,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseRouting();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Add JWT auth middleware
 app.UseAuthentication();
