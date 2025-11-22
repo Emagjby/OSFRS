@@ -7,15 +7,30 @@ using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Validators.Auth;
 
+/// <summary>
+/// Validates profile update requests by enforcing formatting rules,
+/// uniqueness checks, and preventing invalid or conflicting modifications.
+/// </summary>
 public class ProfileUpdateValidator : BaseValidator, IUpdateValidator<UpdatedProfileDto, User>
 {
     private readonly IUserRepository _repo;
 
+    /// <summary>
+    /// Initializes a new <see cref="ProfileUpdateValidator"/> instance.
+    /// </summary>
+    /// <param name="repo">Repository used for uniqueness checks.</param>
     public ProfileUpdateValidator(IUserRepository repo)
     {
         _repo = repo;
     }
 
+    /// <summary>
+    /// Validates a profile update request against business and formatting rules.
+    /// Ensures that modified fields follow required formatting and do not conflict
+    /// with existing users (e.g., duplicate email or username).
+    /// </summary>
+    /// <param name="dto">The update payload.</param>
+    /// <param name="existing">The user being updated.</param>
     public async Task ValidateAsync(UpdatedProfileDto dto, User existing)
     {
         // NAME

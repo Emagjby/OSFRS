@@ -7,17 +7,30 @@ using OSFRS.Backend.DTOs.Auth;
 namespace OSFRS.Backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/profile")]
 [Authorize]
 public class ProfileController : ControllerBase
 {
     private readonly IProfileService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ProfileController"/>.
+    /// </summary>
+    /// <param name="service">The profile service handling user profile operations.</param>
     public ProfileController(IProfileService service)
     {
         _service = service;
     }
 
+    /// <summary>
+    /// Retrieves the profile of the currently authenticated user.
+    /// </summary>
+    /// <returns>The user's profile details.</returns>
+    /// <remarks>
+    /// The user ID is extracted from the JWT token via <see cref="UserContextHelper"/>.
+    /// </remarks>
+    /// <response code="200">Returns the profile of the authenticated user.</response>
+    /// <response code="401">Invalid or missing authentication token.</response>
     [HttpGet]
     public async Task<IActionResult> GetProfile()
     {
@@ -27,6 +40,17 @@ public class ProfileController : ControllerBase
         return Ok(profile);
     }
 
+    /// <summary>
+    /// Updates the profile information of the currently authenticated user.
+    /// </summary>
+    /// <param name="dto">The updated profile fields.</param>
+    /// <returns>A confirmation message.</returns>
+    /// <remarks>
+    /// Validation and uniqueness checks are handled in <see cref="IProfileService"/>.
+    /// </remarks>
+    /// <response code="200">Profile updated successfully.</response>
+    /// <response code="400">Validation failed (e.g. invalid email, username, etc.).</response>
+    /// <response code="409">Username or email already taken.</response>
     [HttpPut]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdatedProfileDto dto)
     {

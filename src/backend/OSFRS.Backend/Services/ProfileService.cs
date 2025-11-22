@@ -9,6 +9,10 @@ using OSFRS.Backend.Exceptions;
 
 namespace OSFRS.Backend.Services;
 
+/// <summary>
+/// Provides read and update operations for user profile information.
+/// Handles profile field modification, password updates, and validation.
+/// </summary>
 public class ProfileService : IProfileService
 {
     private readonly IUserRepository _repo;
@@ -16,6 +20,13 @@ public class ProfileService : IProfileService
     private readonly IAppLogger<ProfileService> _logger;
     private readonly IUpdateValidator<UpdatedProfileDto, User> _validator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ProfileService"/> class.
+    /// </summary>
+    /// <param name="repo">Repository used for querying and updating user records.</param>
+    /// <param name="hasher">Password hashing abstraction.</param>
+    /// <param name="logger">Logging abstraction for profile operations.</param>
+    /// <param name="validator">Validator enforcing update rules and business logic.</param>
     public ProfileService(
         IUserRepository repo,
         IPasswordHasher hasher,
@@ -29,12 +40,18 @@ public class ProfileService : IProfileService
         _validator = validator;
     }
 
+    /// <summary>
+    /// Retrieves a user's profile by their unique identifier.
+    /// </summary>
+    /// <param name="userId">The ID of the user whose profile is being requested.</param>
+    /// <returns>A <see cref="UserProfileDto"/> containing full profile information.</returns>
+    /// <exception cref="Exception">Thrown when the specified user does not exist.</exception>
     public async Task<UserProfileDto> GetProfileAsync(int userId)
     {
         var user = await _repo.GetByIdAsync(userId);
         if (user is null)
         {
-            throw new Exception("User not found.");
+            throw new NotFoundException("User not found.");
         }
 
         return new UserProfileDto
@@ -49,6 +66,12 @@ public class ProfileService : IProfileService
         };
     }
 
+    /// <summary>
+    /// Updates editable fields of a user's profile, including optional password changes.
+    /// </summary>
+    /// <param name="userId">The ID of the user whose profile is being modified.</param>
+    /// <param name="dto">Update request containing modified fields.</param>
+    /// <exception cref="NotFoundException">Thrown when the user cannot be found.</exception>
     public async Task UpdateProfileAsync(int userId, UpdatedProfileDto dto)
     {
         _logger.LogInformation("Updating profile for User {UserId}", userId);

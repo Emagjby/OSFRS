@@ -9,6 +9,10 @@ using OSFRS.Backend.Validators.Reservations;
 
 namespace OSFRS.Backend.Services;
 
+/// <summary>
+/// Handles all reservation operations, including creation, updates,
+/// cancellation, searching, availability calculation, and admin overrides.
+/// </summary>
 public class ReservationService : IReservationService
 {
     private readonly IReservationRepository _repo;
@@ -18,6 +22,14 @@ public class ReservationService : IReservationService
     private readonly IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)> _updateValidator;
     private readonly CancelReservationValidator _cancelValidator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReservationService"/> class.
+    /// </summary>
+    /// <param name="repo">Repository used for reservation persistence and querying.</param>
+    /// <param name="logger">Logging abstraction for reservation operations.</param>
+    /// <param name="createValidator">Validator for reservation creation.</param>
+    /// <param name="updateValidator">Validator for reservation updates.</param>
+    /// <param name="cancelValidator">Validator ensuring cancellation rules are followed.</param>
     public ReservationService(
         IReservationRepository repo,
         IAppLogger<ReservationService> logger,
@@ -34,6 +46,12 @@ public class ReservationService : IReservationService
         _cancelValidator = cancelValidator;
     }
 
+    /// <summary>
+    /// Returns the availability calendar for a facility for the specified day.
+    /// </summary>
+    /// <param name="facilityId">The facility whose availability is requested.</param>
+    /// <param name="date">The target date. Defaults to today.</param>
+    /// <returns>A collection of availability slots representing scheduled reservations.</returns>
     public async Task<IEnumerable<AvailabilitySlotDto>> GetAvailabilityCalendarAsync(int facilityId, DateTime? date = null)
     {
         var targetDate = date ?? DateTime.UtcNow;
@@ -53,9 +71,15 @@ public class ReservationService : IReservationService
         });
     }
 
+    /// <summary>
+    /// Retrieves all reservations for a specific facility within an optional time range.
+    /// </summary>
     public async Task<IEnumerable<Reservation>> GetReservationsAsync(int facilityId, DateTime? start = null, DateTime? end = null)
         => await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
 
+    /// <summary>
+    /// Performs a flexible search across reservations using optional filters.
+    /// </summary>
     public async Task<IEnumerable<Reservation>> SearchReservationAsync(
         int? userId = null,
         int? facilityId = null,
@@ -63,6 +87,12 @@ public class ReservationService : IReservationService
         DateTime? end = null
     ) => await _repo.SearchAsync(userId, facilityId, start, end);
 
+    /// <summary>
+    /// Creates a reservation for the specified user.
+    /// </summary>
+    /// <param name="dto">Reservation data provided by the user.</param>
+    /// <param name="userId">ID of the user creating the reservation.</param>
+    /// <returns>The created reservation.</returns>
     public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, int userId)
     {
         _logger.LogInformation(
@@ -92,6 +122,9 @@ public class ReservationService : IReservationService
         return reservation;
     }
 
+    /// <summary>
+    /// Updates an existing reservation for the specified user.
+    /// </summary>
     public async Task<Reservation> UpdateReservationAsync(int id, UpdateReservationDto dto, int userId)
     {
         var reservation = await _repo.GetByIdAsync(id)
@@ -118,6 +151,9 @@ public class ReservationService : IReservationService
         return reservation;
     }
 
+    /// <summary>
+    /// Cancels a reservation if permitted for the requesting user.
+    /// </summary>
     public async Task CancelReservationAsync(int id, int userId)
     {
         var reservation = await _repo.GetByIdAsync(id)
@@ -140,9 +176,15 @@ public class ReservationService : IReservationService
             id, userId);
     }
 
+    /// <summary>
+    /// Retrieves all reservations in the system.
+    /// </summary>
     public async Task<IEnumerable<Reservation>> GetAllReservationsAsync()
         => await _repo.GetAllAsync();
 
+    /// <summary>
+    /// Deletes a reservation as an administrator.
+    /// </summary>
     public async Task DeleteReservationAsync(int id, int adminId)
     {
         _logger.LogInformation(
@@ -160,6 +202,9 @@ public class ReservationService : IReservationService
             adminId, id);
     }
 
+    /// <summary>
+    /// Updates a reservation with administrative privileges.
+    /// </summary>
     public async Task<Reservation> AdminUpdateReservationAsync(int id, UpdateReservationDto dto, int adminId)
     {
         var reservation = await _repo.GetByIdAsync(id)

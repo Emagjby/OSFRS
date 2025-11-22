@@ -7,17 +7,34 @@ using OSFRS.Backend.Interfaces.Service;
 
 namespace OSFRS.Backend.Services;
 
+/// <summary>
+/// Provides analytical operations over usage data, including trend computation,
+/// anomaly detection, peak usage extraction and visualization dataset building.
+/// </summary>
 public class AnalyticsService : IAnalyticsService
 {
     private readonly IAnalyticsRepository _repo;
     private readonly IAppLogger<AnalyticsService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AnalyticsService"/> class.
+    /// </summary>
+    /// <param name="repo">Repository used for analytical data queries.</param>
+    /// <param name="logger">Logging abstraction.</param>
     public AnalyticsService(IAnalyticsRepository repo, IAppLogger<AnalyticsService> logger)
     {
         _repo = repo;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Detects anomalies within a date range, using either Z-Score or MAD (Median Absolute Deviation).
+    /// </summary>
+    /// <param name="from">Start date (inclusive).</param>
+    /// <param name="to">End date (inclusive).</param>
+    /// <param name="mode">Detection mode: "z-score" or "mad".</param>
+    /// <returns>A report describing detected anomalies.</returns>
+    /// <exception cref="ArgumentException">Thrown when an invalid detection mode is specified.</exception>
     public async Task<AnomalyReportDto> DetectAnomaliesAsync(DateTime from, DateTime to, string mode = "z-score")
     {
         var raw = (await _repo.GetDailyCountsAsync(from, to)).ToList();
@@ -48,6 +65,13 @@ public class AnalyticsService : IAnalyticsService
         };
     }
 
+    /// <summary>
+    /// Computes daily usage trends across a specified time window.
+    /// Includes totals, averages, moving average and percentage changes.
+    /// </summary>
+    /// <param name="from">Start of trend period.</param>
+    /// <param name="to">End of trend period.</param>
+    /// <returns>A structured <see cref="TrendReportDto"/> containing trend data.</returns>
     public async Task<TrendReportDto> GetDailyTrendsAsync(DateTime from, DateTime to)
     {
         var data = (await _repo.GetDailyCountsAsync(from, to)).ToList();
@@ -74,11 +98,7 @@ public class AnalyticsService : IAnalyticsService
 
         _logger.LogInformation(
             "Daily trend computed: {Points} points, total: {Total}, avg: {Avg:F2}, movingAvg(3): {MA}, %change: {PC}",
-            data.Count,
-            total,
-            average,
-            movingAvg,
-            percentage
+            data.Count, total, average, movingAvg, percentage
         );
 
         return new TrendReportDto
@@ -92,6 +112,12 @@ public class AnalyticsService : IAnalyticsService
         };
     }
 
+    /// <summary>
+    /// Computes monthly aggregated usage trends for a given year.
+    /// Includes totals, averages, moving averages and percentage changes.
+    /// </summary>
+    /// <param name="year">The target year.</param>
+    /// <returns>A <see cref="TrendReportDto"/> summarizing monthly trends.</returns>
     public async Task<TrendReportDto> GetMonthlyTrendsAsync(int year)
     {
         var data = (await _repo.GetMonthlyCountsAsync(year)).ToList();
@@ -111,18 +137,14 @@ public class AnalyticsService : IAnalyticsService
 
         var count = data.Select(x => x.Count).ToList();
         var total = count.Sum();
-        var average = total / (double)data.Count();
+        var average = total / (double)data.Count;
 
         var movingAvg = TrendMath.MovingAverage(count, 3);
         var percentage = TrendMath.PercentageChanges(count);
 
         _logger.LogInformation(
             "Monthly trend computed: {Points} months, total {Total}, avg {Avg:F2}, movingAvg(3): {MA}, %change: {PC}",
-            data.Count,
-            total,
-            average,
-            movingAvg,
-            percentage
+            data.Count, total, average, movingAvg, percentage
         );
 
         return new TrendReportDto
@@ -136,6 +158,12 @@ public class AnalyticsService : IAnalyticsService
         };
     }
 
+    /// <summary>
+    /// Determines the peak usage count within a date range.
+    /// </summary>
+    /// <param name="from">Start of the analysis period.</param>
+    /// <param name="to">End of the analysis period.</param>
+    /// <returns>Metadata describing when peak usage occurred.</returns>
     public async Task<PeakUsageDto> GetPeakUsageAsync(DateTime from, DateTime to)
     {
         var data = (await _repo.GetDailyCountsAsync(from, to)).ToList();
@@ -154,11 +182,7 @@ public class AnalyticsService : IAnalyticsService
 
         var peak = data.MaxBy(x => x.Count)!;
 
-        _logger.LogInformation(
-            "Peak usage: {Count} events on {Date}",
-            peak.Count,
-            peak.Timestamp.ToShortDateString()
-        );
+        _logger.LogInformation("Peak usage: {Count} events on {Date}", peak.Count, peak.Timestamp.ToShortDateString());
 
         return new PeakUsageDto
         {
@@ -168,6 +192,12 @@ public class AnalyticsService : IAnalyticsService
         };
     }
 
+    /// <summary>
+    /// Builds visualization-friendly data for usage charts such as line graphs.
+    /// </summary>
+    /// <param name="from">Start of range.</param>
+    /// <param name="to">End of range.</param>
+    /// <returns>A <see cref="VisualizationDataDto"/> containing labels and values.</returns>
     public async Task<VisualizationDataDto> GetVisualizationDataAsync(DateTime from, DateTime to)
     {
         var data = (await _repo.GetDailyCountsAsync(from, to)).ToList();
@@ -187,10 +217,7 @@ public class AnalyticsService : IAnalyticsService
         var labels = data.Select(x => x.Timestamp.ToString("MM-dd")).ToList();
         var values = data.Select(x => x.Count).ToList();
 
-        _logger.LogInformation(
-            "Visualization data created: {N} points",
-            labels.Count
-        );
+        _logger.LogInformation("Visualization data created: {N} points", labels.Count);
 
         return new VisualizationDataDto
         {

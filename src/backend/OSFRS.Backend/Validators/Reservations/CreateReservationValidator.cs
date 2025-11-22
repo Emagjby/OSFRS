@@ -5,12 +5,20 @@ using OSFRS.Backend.Validators.Base;
 
 namespace OSFRS.Backend.Validators.Reservations;
 
+/// <summary>
+/// Validates creation requests for new reservations.
+/// Ensures the facility exists, the time window is valid,
+/// no maintenance overlaps occur, and the slot is available.
+/// </summary>
 public class CreateReservationValidator : BaseValidator, IValidator<(CreateReservationDto dto, int userId)>
 {
     private readonly IFacilityRepository _facility;
     private readonly IReservationRepository _reservation;
     private readonly IMaintenanceRepository _maintenance;
 
+    /// <summary>
+    /// Initializes the validator with its required dependencies.
+    /// </summary>
     public CreateReservationValidator(
         IFacilityRepository facility,
         IReservationRepository reservation,
@@ -21,6 +29,11 @@ public class CreateReservationValidator : BaseValidator, IValidator<(CreateReser
         _maintenance = maintenance;
     }
 
+    /// <summary>
+    /// Validates that the reservation request meets all business rules.
+    /// </summary>
+    /// <param name="input">A tuple containing the reservation DTO and requesting user ID.</param>
+    /// <returns>A completed task if validation passes.</returns>
     public async Task ValidateAsync((CreateReservationDto dto, int userId) input)
     {
         var (dto, userId) = input;

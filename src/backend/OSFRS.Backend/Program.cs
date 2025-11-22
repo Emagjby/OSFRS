@@ -22,12 +22,12 @@ using OSFRS.Backend.DTOs.Facilities;
 using OSFRS.Backend.Validators.Facilities;
 using OSFRS.Backend.Validators.Reservations;
 using OSFRS.Backend.DTOs.Reservations;
-using OSFRS.Backend.DTOs.Reports;
 using OSFRS.Backend.Validators.Usage;
 using OSFRS.Backend.Validators.Maintenance;
 using OSFRS.Backend.DTOs.Maintenance;
 using OSFRS.Backend.Middleware;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection;
 
 Env.Load();
 
@@ -130,6 +130,16 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+
+    options.CustomSchemaIds(type => type.FullName);
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -153,17 +163,24 @@ app.UseRouting();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// Add JWT auth middleware
-app.UseAuthentication();
-app.UseAuthorization();
-
 if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
 {
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
         Authorization = [new AllowAllHangfireAuthFilter()]
     });
+
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "OSFRS API Docs";
+        options.DisplayRequestDuration();
+    });
 }
+
+// Add JWT auth middleware
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map controllers
 app.MapControllers();

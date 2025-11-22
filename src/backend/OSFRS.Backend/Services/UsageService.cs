@@ -9,12 +9,22 @@ using System.Text.Json;
 
 namespace OSFRS.Backend.Services;
 
+/// <summary>
+/// Provides event logging, aggregation, and analytics-related operations
+/// for usage tracking across the system.
+/// </summary>
 public class UsageService : IUsageService
 {
     private readonly IUsageRepository _repo;
     private readonly IAppLogger<UsageService> _logger;
     private readonly UsageQueryValidator _validator;
 
+    /// <summary>
+    /// Initializes a new <see cref="UsageService"/> instance.
+    /// </summary>
+    /// <param name="repo">Repository handling persistence and analytics operations.</param>
+    /// <param name="logger">Logger for diagnostics and auditing.</param>
+    /// <param name="validator">Validator that ensures query parameters are valid.</param>
     public UsageService(
         IUsageRepository repo,
         IAppLogger<UsageService> logger,
@@ -25,6 +35,9 @@ public class UsageService : IUsageService
         _validator = validator;
     }
 
+    /// <summary>
+    /// Triggers daily and monthly aggregations and logs an aggregation event.
+    /// </summary>
     public async Task AggregateAsync()
     {
         var now = DateTime.UtcNow;
@@ -45,6 +58,10 @@ public class UsageService : IUsageService
         );
     }
 
+    /// <summary>
+    /// Logs multiple usage events in bulk.
+    /// </summary>
+    /// <param name="dtos">The usage events to insert.</param>
     public async Task BulkLogAsync(IEnumerable<UsageEventDto> dtos)
     {
         var usageRecords = dtos.Select(dto => new UsageRecord
@@ -67,12 +84,27 @@ public class UsageService : IUsageService
         );
     }
 
+    /// <summary>
+    /// Retrieves all usage events that occurred on the specified day.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> GetDailyAggregateAsync(DateTime date)
         => await _repo.GetDailyAnalyticsAsync(date);
 
+    /// <summary>
+    /// Retrieves all usage events aggregated for a specific month.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> GetMonthlyAggregateAsync(int year, int month)
         => await _repo.GetMonthlyAnalyticsAsync(year, month);
 
+    /// <summary>
+    /// Queries usage events based on provided filters.
+    /// </summary>
+    /// <param name="eventType">Optional event type to filter.</param>
+    /// <param name="userId">Optional user ID to filter.</param>
+    /// <param name="facilityId">Optional facility ID to filter.</param>
+    /// <param name="start">Optional start date/time.</param>
+    /// <param name="end">Optional end date/time.</param>
+    /// <returns>A filtered set of usage records.</returns>
     public async Task<IEnumerable<UsageRecord>> GetEventsAsync(
         string? eventType = null,
         int? userId = null,
@@ -92,6 +124,10 @@ public class UsageService : IUsageService
         return events;
     }
 
+    /// <summary>
+    /// Logs a single usage event.
+    /// </summary>
+    /// <param name="dto">Event data describing the operation performed.</param>
     public async Task LogEventAsync(UsageEventDto dto)
     {
         var usageRecord = new UsageRecord

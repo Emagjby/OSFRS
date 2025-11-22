@@ -8,6 +8,11 @@ using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
 
+/// <summary>
+/// Provides operations for scheduling, updating, retrieving, and deleting
+/// facility maintenance tasks. Also synchronizes facility availability
+/// based on active maintenance windows.
+/// </summary>
 public class MaintenanceService : IMaintenanceService
 {
     private readonly IMaintenanceRepository _repo;
@@ -17,6 +22,14 @@ public class MaintenanceService : IMaintenanceService
     private readonly IValidator<CreateMaintenanceRecordDto> _createValidator;
     private readonly IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord> _updateValidator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaintenanceService"/> class.
+    /// </summary>
+    /// <param name="repo">Maintenance repository instance.</param>
+    /// <param name="facilityRepo">Facility repository instance.</param>
+    /// <param name="logger">Logging abstraction.</param>
+    /// <param name="createValidator">Validator for creation of maintenance records.</param>
+    /// <param name="updateValidator">Validator for updates to maintenance records.</param>
     public MaintenanceService(
         IMaintenanceRepository repo,
         IFacilityRepository facilityRepo,
@@ -32,6 +45,13 @@ public class MaintenanceService : IMaintenanceService
         _updateValidator = updateValidator;
     }
 
+    /// <summary>
+    /// Deletes a maintenance record by ID.
+    /// </summary>
+    /// <param name="id">Maintenance record ID.</param>
+    /// <returns>
+    /// True when the record existed and was removed; false if it did not exist.
+    /// </returns>
     public async Task<bool> DeleteMaintenanceAsync(int id)
     {
         var entity = await _repo.GetByIdAsync(id);
@@ -48,6 +68,12 @@ public class MaintenanceService : IMaintenanceService
         return true;
     }
 
+    /// <summary>
+    /// Retrieves all maintenance records associated with a facility.
+    /// </summary>
+    /// <param name="facilityId">Facility ID.</param>
+    /// <returns>A collection of related maintenance records.</returns>
+    /// <exception cref="NotFoundException">Thrown when the facility does not exist.</exception>
     public async Task<IEnumerable<MaintenanceRecord>> GetMaintenanceByFacilityAsync(int facilityId)
     {
         if (await _facilityRepo.GetByIdAsync(facilityId) is null)
@@ -64,6 +90,10 @@ public class MaintenanceService : IMaintenanceService
         return records;
     }
 
+    /// <summary>
+    /// Retrieves all upcoming future maintenance records.
+    /// </summary>
+    /// <returns>A collection of future-dated maintenance entries.</returns>
     public async Task<IEnumerable<MaintenanceRecord>> GetUpcomingMaintenanceAsync()
     {
         var records = await _repo.GetUpcomingAsync();
@@ -72,6 +102,12 @@ public class MaintenanceService : IMaintenanceService
         return records;
     }
 
+    /// <summary>
+    /// Schedules a new maintenance task for a facility.
+    /// </summary>
+    /// <param name="dto">Creation request DTO.</param>
+    /// <returns>The created <see cref="MaintenanceRecord"/> entity.</returns>
+    /// <exception cref="NotFoundException">Thrown when the facility does not exist.</exception>
     public async Task<MaintenanceRecord> ScheduleMaintenanceAsync(CreateMaintenanceRecordDto dto)
     {
         await _createValidator.ValidateAsync(dto);
@@ -103,6 +139,13 @@ public class MaintenanceService : IMaintenanceService
         return entity;
     }
 
+    /// <summary>
+    /// Synchronizes facility statuses by checking active maintenance windows.
+    /// </summary>
+    /// <remarks>
+    /// Facilities currently within maintenance time ranges are marked
+    /// as <c>UnderMaintenance</c>, otherwise switched back to <c>Available</c>.
+    /// </remarks>
     public async Task SyncFacilityStatusesAsync()
     {
         var now = DateTime.UtcNow;
@@ -150,6 +193,13 @@ public class MaintenanceService : IMaintenanceService
         _logger.LogInformation("Facility status sync completed.");
     }
 
+    /// <summary>
+    /// Updates an existing maintenance record after validating the changes.
+    /// </summary>
+    /// <param name="id">Record ID.</param>
+    /// <param name="dto">Update request DTO.</param>
+    /// <returns>The updated record, or null if not found.</returns>
+    /// <exception cref="NotFoundException">Thrown when the record does not exist.</exception>
     public async Task<MaintenanceRecord?> UpdateMaintenanceAsync(int id, UpdateMaintenanceRecordDto dto)
     {
         var existing = await _repo.GetByIdAsync(id)

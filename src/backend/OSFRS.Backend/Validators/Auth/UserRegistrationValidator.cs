@@ -6,15 +6,34 @@ using OSFRS.Backend.Validators.Common;
 
 namespace OSFRS.Backend.Validators.Auth;
 
+/// <summary>
+/// Validates user registration data by enforcing formatting, strength rules,
+/// and ensuring uniqueness of usernames and emails.
+/// </summary>
 public class UserRegistrationValidator : BaseValidator, IValidator<UserRegistrationDto>
 {
     private readonly IUserRepository _repo;
 
+    /// <summary>
+    /// Initializes a new instance of the validator with access to the user repository
+    /// for uniqueness checks.
+    /// </summary>
+    /// <param name="repo">Repository used for username and email lookup.</param>
     public UserRegistrationValidator(IUserRepository repo)
     {
         _repo = repo;
     }
 
+    /// <summary>
+    /// Performs validation for a user registration request, ensuring:
+    /// <list type="bullet">
+    /// <item><description>Name follows formatting and length requirements.</description></item>
+    /// <item><description>Username format is valid and unique.</description></item>
+    /// <item><description>Email format is valid and unique.</description></item>
+    /// <item><description>Password meets strength requirements.</description></item>
+    /// </list>
+    /// </summary>
+    /// <param name="dto">Registration request data.</param>
     public async Task ValidateAsync(UserRegistrationDto dto)
     {
         // NAME
