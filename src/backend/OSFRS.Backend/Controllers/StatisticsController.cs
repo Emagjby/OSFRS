@@ -1,29 +1,38 @@
-using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Service;
 
 namespace OSFRS.Backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/statistics")]
 [Authorize(Roles = "Admin")]
 public class StatisticsController : ControllerBase
 {
     private readonly IUsageService _usage;
     private readonly IReportService _report;
     private readonly IAnalyticsService _analytics;
-    private readonly IAppLogger<StatisticsController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StatisticsController"/>.
+    /// Provides endpoints for reporting, analytics, and usage insights.
+    /// </summary>
+    /// <param name="usage">Service for usage event queries and aggregation.</param>
+    /// <param name="report">Service for generating reports in various formats.</param>
+    /// <param name="analytics">Service providing statistical insights and anomaly detection.</param>
+    /// <param name="logger">Application logger.</param>
     public StatisticsController(IUsageService usage, IReportService report, IAnalyticsService analytics, IAppLogger<StatisticsController> logger)
     {
         _usage = usage;
         _report = report;
         _analytics = analytics;
-        _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves raw usage events filtered by type, user, facility, or date range.
+    /// </summary>
+    /// <returns>A collection of usage events.</returns>
     [HttpGet("events")]
     public async Task<IActionResult> GetEvents(
         [FromQuery] string? eventType,
@@ -32,177 +41,126 @@ public class StatisticsController : ControllerBase
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
-        try
-        {
-            var events = await _usage.GetEventsAsync(
-                eventType,
-                userId,
-                facilityId,
-                from,
-                to
-            );
-            return Ok(events);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching usage events.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        var events = await _usage.GetEventsAsync(eventType, userId, facilityId, from, to);
+        return Ok(events);
     }
 
+    /// <summary>
+    /// Retrieves aggregated usage statistics for a specific day.
+    /// </summary>
+    /// <param name="date">The date to aggregate. Defaults to today.</param>
+    /// <returns>Daily usage aggregates.</returns>
     [HttpGet("aggregate/daily")]
     public async Task<IActionResult> GetDailyAggregate([FromQuery] DateTime? date)
     {
-        try
-        {
-            var targetDate = date ?? DateTime.UtcNow;
-
-            var results = await _usage.GetDailyAggregateAsync(targetDate);
-            return Ok(results);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching daily analytics.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        var targetDate = date ?? DateTime.UtcNow;
+        var results = await _usage.GetDailyAggregateAsync(targetDate);
+        return Ok(results);
     }
 
+    /// <summary>
+    /// Retrieves monthly aggregated usage data for a specific month and year.
+    /// </summary>
+    /// <returns>Monthly usage aggregates.</returns>
     [HttpGet("aggregate/monthly")]
     public async Task<IActionResult> GetMonthlyAggregate([FromQuery] int? year, [FromQuery] int? month)
     {
-        try
-        {
-            int targetYear = year ?? DateTime.UtcNow.Year;
-            int targetMonth = month ?? DateTime.UtcNow.Month;
+        int targetYear = year ?? DateTime.UtcNow.Year;
+        int targetMonth = month ?? DateTime.UtcNow.Month;
 
-            var results = await _usage.GetMonthlyAggregateAsync(targetYear, targetMonth);
-            return Ok(results);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching monthly analytics.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        var results = await _usage.GetMonthlyAggregateAsync(targetYear, targetMonth);
+        return Ok(results);
     }
 
+    /// <summary>
+    /// Forces the system to run aggregation for both daily and monthly usage.
+    /// </summary>
+    /// <returns>Status message indicating aggregation completion.</returns>
     [HttpPost("aggregate/run")]
     public async Task<IActionResult> RunAggregation()
     {
-        try
-        {
-            await _usage.AggregateAsync();
-            return Ok(new { message = "Aggregation executed successfully." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error running aggregation job.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        await _usage.AggregateAsync();
+        return Ok(new { message = "Aggregation executed successfully." });
     }
 
+    /// <summary>
+    /// Generates a daily usage report.
+    /// </summary>
+    /// <param name="date">Optional date to generate the report for.</param>
+    /// <returns>A structured daily report.</returns>
     [HttpGet("reports/daily")]
     public async Task<IActionResult> GetDailyReport([FromQuery] DateTime? date)
     {
-        try
-        {
-            var report = await _report.GetDailyReportAsync(date);
-
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating daily report");
-            return StatusCode(500, "Internal server error.");
-        }
+        var report = await _report.GetDailyReportAsync(date);
+        return Ok(report);
     }
 
+    /// <summary>
+    /// Generates a monthly usage report.
+    /// </summary>
+    /// <returns>A structured monthly report.</returns>
     [HttpGet("reports/monthly")]
     public async Task<IActionResult> GetMonthlyReport([FromQuery] int? year, [FromQuery] int? month)
     {
-        try
-        {
-            var report = await _report.GetMonthlyReportAsync(year, month);
-
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating monthly report");
-            return StatusCode(500, "Internal server error.");
-        }
+        var report = await _report.GetMonthlyReportAsync(year, month);
+        return Ok(report);
     }
 
+    /// <summary>
+    /// Exports a daily usage report in CSV format.
+    /// </summary>
+    /// <returns>A CSV file containing usage data.</returns>
     [HttpGet("export/csv")]
     public async Task<IActionResult> ExportCsv([FromQuery] DateTime? date)
     {
-        try
-        {
-            var bytes = await _report.ExportCsvAsync(date);
-            return File(bytes, "text/csv", "usage_report.csv");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error exporting CSV report");
-            return StatusCode(500, "Internal server error.");
-        }
+        var bytes = await _report.ExportCsvAsync(date);
+        return File(bytes, "text/csv", "usage_report.csv");
     }
 
+    /// <summary>
+    /// Exports a daily usage report in PDF format.
+    /// </summary>
+    /// <returns>A PDF file containing usage data.</returns>
     [HttpGet("export/pdf")]
     public async Task<IActionResult> ExportPdf([FromQuery] DateTime? date)
     {
-        try
-        {
-            var bytes = await _report.ExportPdfAsync(date);
-            return File(bytes, "application/pdf", "usage_report.pdf");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error exporting PDF report");
-            return StatusCode(500, "Internal server error.");
-        }
+        var bytes = await _report.ExportPdfAsync(date);
+        return File(bytes, "application/pdf", "usage_report.pdf");
     }
 
+    /// <summary>
+    /// Retrieves daily usage trends between two dates.
+    /// </summary>
+    /// <returns>Daily trend analysis data.</returns>
     [HttpGet("analytics/trends/daily")]
     public async Task<IActionResult> GetDailyTrends([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        try
-        {
-            if (from is null || to is null)
-                return BadRequest("Both 'from' and 'to' are required.");
+        if (from is null || to is null)
+            return BadRequest("Both 'from' and 'to' are required.");
 
-            var report = await _analytics.GetDailyTrendsAsync(from.Value, to.Value);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error computing DAILY trends");
-            return StatusCode(500, "Internal server error.");
-        }
+        var report = await _analytics.GetDailyTrendsAsync(from.Value, to.Value);
+        return Ok(report);
     }
 
+    /// <summary>
+    /// Retrieves monthly usage trends for a given year.
+    /// </summary>
+    /// <returns>Monthly trend analysis.</returns>
     [HttpGet("analytics/trends/monthly")]
     public async Task<IActionResult> GetMonthlyTrends([FromQuery] int? year)
     {
-        try
-        {
-            var targetYear = year ?? DateTime.UtcNow.Year;
+        var targetYear = year ?? DateTime.UtcNow.Year;
 
-            var report = await _analytics.GetMonthlyTrendsAsync(targetYear);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error computing MONTHLY trends");
-            return StatusCode(500, "Internal server error.");
-        }
+        var report = await _analytics.GetMonthlyTrendsAsync(targetYear);
+        return Ok(report);
     }
 
+    /// <summary>
+    /// Identifies peak usage periods within a specific date range.
+    /// </summary>
+    /// <returns>A peak usage summary.</returns>
     [HttpGet("analytics/peaks")]
-    public async Task<IActionResult> GetPeakUsage(
-    [FromQuery] DateTime? from,
-    [FromQuery] DateTime? to)
-{
-    try
+    public async Task<IActionResult> GetPeakUsage([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
         if (from is null || to is null)
             return BadRequest("Both 'from' and 'to' are required.");
@@ -210,20 +168,19 @@ public class StatisticsController : ControllerBase
         var peak = await _analytics.GetPeakUsageAsync(from.Value, to.Value);
         return Ok(peak);
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error computing peak usage");
-        return StatusCode(500, "Internal server error.");
-    }
-}
 
-[HttpGet("analytics/anomalies")]
-public async Task<IActionResult> DetectAnomalies(
-    [FromQuery] DateTime? from,
-    [FromQuery] DateTime? to,
-    [FromQuery] string mode = "z-score")
-{
-    try
+    /// <summary>
+    /// Performs anomaly detection on usage data within a date range.
+    /// </summary>
+    /// <param name="from">Start of the date range.</param>
+    /// <param name="to">End of the date range.</param>
+    /// <param name="mode">Detection mode ("z-score" or "mad").</param>
+    /// <returns>A list of detected anomalies.</returns>
+    [HttpGet("analytics/anomalies")]
+    public async Task<IActionResult> DetectAnomalies(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] string mode = "z-score")
     {
         if (from is null || to is null)
             return BadRequest("Both 'from' and 'to' are required.");
@@ -231,30 +188,20 @@ public async Task<IActionResult> DetectAnomalies(
         var result = await _analytics.DetectAnomaliesAsync(from.Value, to.Value, mode);
         return Ok(result);
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error detecting anomalies");
-        return StatusCode(500, "Internal server error.");
-    }
-}
 
+    /// <summary>
+    /// Returns a dataset suitable for charts and visual dashboards.
+    /// </summary>
+    /// <returns>Visualization-ready usage analytics.</returns>
     [HttpGet("analytics/visualization")]
     public async Task<IActionResult> GetVisualizationData(
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
-        try
-        {
-            if (from is null || to is null)
-                return BadRequest("Both 'from' and 'to' are required.");
+        if (from is null || to is null)
+            return BadRequest("Both 'from' and 'to' are required.");
 
-            var chart = await _analytics.GetVisualizationDataAsync(from.Value, to.Value);
-            return Ok(chart);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error building visualization dataset");
-            return StatusCode(500, "Internal server error.");
-        }
+        var chart = await _analytics.GetVisualizationDataAsync(from.Value, to.Value);
+        return Ok(chart);
     }
 }

@@ -1,139 +1,142 @@
-using OSFRS.Backend.Interfaces;
 using OSFRS.Models.Entities;
 using OSFRS.Backend.Data;
 using OSFRS.Backend.Interfaces.Logging;
 using Microsoft.EntityFrameworkCore;
+using OSFRS.Backend.Interfaces.Repository;
 
 namespace OSFRS.Backend.Repositories;
 
-public class ReservationRepository : IReservationRepository
+/// <summary>
+/// Repository responsible for managing reservation data, including
+/// queries by user, facility, time ranges, conflict detection, and status updates.
+/// </summary>
+public class ReservationRepository : BaseRepository<Reservation>, IReservationRepository
 {
-    private readonly OSFRSDbContext _context;
-    private readonly IAppLogger<ReservationRepository> _logger;
-
-    public ReservationRepository(OSFRSDbContext context, IAppLogger<ReservationRepository> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReservationRepository"/> class.
+    /// </summary>
+    /// <param name="context">The database context used for data access.</param>
+    /// <param name="logger">Logger for diagnostic and audit information.</param>
+    public ReservationRepository(
+        OSFRSDbContext context,
+        IAppLogger<BaseRepository<Reservation>> logger
+    ) : base(context, logger)
     {
-        _context = context;
-        _logger = logger;
     }
 
-    public async Task<Reservation?> AddAsync(Reservation reservation)
-    {
-        _context.Reservations.Add(reservation);
-        await _context.SaveChangesAsync();
-        _logger.LogInformation("Reservation created for UserId {UserId}", reservation.UserId);
-
-        return reservation;
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var reservation = await _context.Reservations.FindAsync(id);
-        if(reservation != null)
-        {
-            _context.Reservations.Remove(reservation);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Reservation {ReservationId} deleted.", id);
-
-            return true;
-        }
-        else
-        {
-            _logger.LogWarning("Attempted to delete non-existent reservation with ID {ReservationId}", id);
-            return false;
-        }
-    }
-
-    public async Task<IEnumerable<Reservation>> GetAllAsync()
-    {
-        return await _context.Reservations
-            .Include(reservation => reservation.User)
-            .ToListAsync();
-    }
-
+    /// <summary>
+    /// Retrieves all reservations associated with the specified user.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <returns>A collection of reservations.</returns>
     public async Task<IEnumerable<Reservation>> GetByUserAsync(int userId)
     {
-        return await _context.Reservations
+        return await _dbSet
             .Where(reservation => reservation.UserId == userId)
             .ToListAsync();
     }
 
-    public async Task<Reservation?> GetReservationByIdAsync(int id)
+    /// <summary>
+    /// Retrieves all reservations including the related user entity.
+    /// </summary>
+    /// <returns>A collection of enriched reservation objects.</returns>
+    public async Task<IEnumerable<Reservation>> GetAllWithUserAsync()
     {
-        return await _context.Reservations
-            .Include(reservation => reservation.User)
-            .FirstOrDefaultAsync(reservation => reservation.Id == id);
+        return await _dbSet
+            .Include(r => r.User)
+            .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves a reservation by its identifier, including the associated user.
+    /// </summary>
+    /// <param name="id">The reservation identifier.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The reservation, or null if not found.</returns>
+    public override async Task<Reservation?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.Id == id);
+    }
+
+    /// <summary>
+    /// Determines whether a reservation slot is free for the specified time range and facility.
+    /// </summary>
+    /// <param name="start">Start time of the reservation.</param>
+    /// <param name="end">End time of the reservation.</param>
+    /// <param name="facilityId">Facility identifier.</param>
+    /// <returns>True if the slot is available; otherwise false.</returns>
     public async Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId)
     {
-        return !await _context.Reservations
-            .AnyAsync(reservation =>
-                reservation.FacilityId == facilityId &&
-                ((start >= reservation.StartTime && start < reservation.EndTime) ||
-                 (end > reservation.StartTime && end <= reservation.EndTime) ||
-                 (start <= reservation.StartTime && end >= reservation.EndTime))
-            );
+        return !await _dbSet.AnyAsync(r =>
+            r.FacilityId == facilityId &&
+            (
+                (start >= r.StartTime && start < r.EndTime) ||
+                (end > r.StartTime && end <= r.EndTime) ||
+                (start <= r.StartTime && end >= r.EndTime)
+            )
+        );
     }
 
-    public async Task<Reservation?> UpdateAsync(Reservation reservation)
-    {
-        _context.Reservations.Update(reservation);
-        await _context.SaveChangesAsync();
-        _logger.LogInformation("Reservation {ReservationId} updated.", reservation.Id);
-
-        return reservation;
-    }
-
+    /// <summary>
+    /// Retrieves reservations by facility and optional time range.
+    /// </summary>
+    /// <param name="facilityId">The facility identifier.</param>
+    /// <param name="start">Optional range start.</param>
+    /// <param name="end">Optional range end.</param>
+    /// <returns>A collection of matching reservations.</returns>
     public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null)
     {
-        var query = _context.Reservations.AsQueryable();
-
-        query = query.Where(reservation => reservation.FacilityId == facilityId);
+        var query = _dbSet.Where(r => r.FacilityId == facilityId);
 
         if (start.HasValue)
-        {
-            query = query.Where(reservation => reservation.StartTime >= start);
-        }
+            query = query.Where(r => r.StartTime >= start);
 
         if (end.HasValue)
-        {
-            query = query.Where(reservation => reservation.EndTime <= end);
-        }
+            query = query.Where(r => r.EndTime <= end);
 
         return await query.ToListAsync();
     }
 
+    /// <summary>
+    /// Searches for reservations matching the provided filter criteria.
+    /// </summary>
+    /// <param name="userId">Optional user identifier.</param>
+    /// <param name="facilityId">Optional facility identifier.</param>
+    /// <param name="start">Optional start time filter.</param>
+    /// <param name="end">Optional end time filter.</param>
+    /// <returns>A collection of matching reservations.</returns>
     public async Task<IEnumerable<Reservation>> SearchAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null)
     {
-        var query = _context.Reservations.AsQueryable();
+        var query = _dbSet.AsQueryable();
 
         if (userId.HasValue)
-        {
             query = query.Where(reservation => reservation.UserId == userId);
-        }
 
         if (facilityId.HasValue)
-        {
             query = query.Where(reservation => reservation.FacilityId == facilityId);
-        }
 
         if (start.HasValue)
-        {
             query = query.Where(reservation => reservation.StartTime >= start);
-        }
 
         if (end.HasValue)
-        {
             query = query.Where(reservation => reservation.EndTime <= end);
-        }
 
         return await query.ToListAsync();
     }
 
+    /// <summary>
+    /// Updates the status of a reservation.
+    /// </summary>
+    /// <param name="id">Reservation identifier.</param>
+    /// <param name="status">New status value.</param>
+    /// <returns>The updated reservation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the reservation does not exist.</exception>
     public async Task<Reservation?> UpdateStatusAsync(int id, string status)
     {
-        var reservation = await _context.Reservations.FindAsync(id);
+        var reservation = await _dbSet.FindAsync(id);
+
         if (reservation == null)
         {
             _logger.LogWarning("Attempted to update status for non-existant reservation {ReservationId}", id);
@@ -143,15 +146,22 @@ public class ReservationRepository : IReservationRepository
         reservation.Status = status;
         reservation.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
         _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);
 
         return reservation;
     }
 
+    /// <summary>
+    /// Checks whether a reservation time range overlaps with an existing reservation, excluding a specific reservation by ID.
+    /// </summary>
+    /// <param name="facilityId">Facility identifier.</param>
+    /// <param name="start">Proposed start time.</param>
+    /// <param name="end">Proposed end time.</param>
+    /// <param name="excludeReservationId">Reservation to exclude from conflict detection.</param>
+    /// <returns>True if a conflict exists; otherwise false.</returns>
     public async Task<bool> HasConflictAsync(int facilityId, DateTime start, DateTime end, int excludeReservationId)
     {
-        var conflictExists = await _context.Reservations.AnyAsync(reservation =>
+        var conflictExists = await _dbSet.AnyAsync(reservation =>
             reservation.FacilityId == facilityId &&
             reservation.Id != excludeReservationId &&
             (

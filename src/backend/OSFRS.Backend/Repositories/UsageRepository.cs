@@ -1,69 +1,56 @@
 using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Data;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Repositories;
 
-public class UsageRepository : IUsageRepository
+/// <summary>
+/// Repository responsible for managing usage analytics data, including
+/// daily and monthly aggregation, querying, filtering, and cleanup routines.
+/// </summary>
+public class UsageRepository : BaseRepository<UsageRecord>, IUsageRepository
 {
-    private readonly OSFRSDbContext _context;
-    private readonly IAppLogger<UsageRepository> _logger;
-
-    public UsageRepository(OSFRSDbContext context, IAppLogger<UsageRepository> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UsageRepository"/> class.
+    /// </summary>
+    /// <param name="context">Database context for persistence operations.</param>
+    /// <param name="logger">Logger instance for instrumentation and debugging.</param>
+    public UsageRepository(
+        OSFRSDbContext context,
+        IAppLogger<BaseRepository<UsageRecord>> logger
+    ) : base(context, logger)
     {
-        _context = context;
-        _logger = logger;
     }
 
-    public async Task<UsageRecord> AddAsync(UsageRecord usageRecord)
-    {
-        await _context.UsageRecords.AddAsync(usageRecord);
-        await _context.SaveChangesAsync();
+    // ------------------------------------------------------------
+    // DAILY AGGREGATION
+    // ------------------------------------------------------------
 
-        _logger.LogInformation(
-            "Usage event logged: {EventType} (User={UserId}, Facility={FacilityId})",
-            usageRecord.EventType,
-            usageRecord.UserId!,
-            usageRecord.FacilityId!
-        );
-
-        return usageRecord;
-    }
-
-    public async Task AddRangeAsync(IEnumerable<UsageRecord> usageRecords)
-    {
-        await _context.UsageRecords.AddRangeAsync(usageRecords);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Bulk usage logging: {Count} entries added.",
-            usageRecords.Count()
-        );
-    }
-    
+    /// <summary>
+    /// Checks whether a daily aggregation already exists for the specified date.
+    /// </summary>
     private async Task<bool> HasDailyAggregateAsync(DateTime date)
     {
         var dayStart = date.Date;
         var dayEnd = dayStart.AddDays(1);
 
-        var usageRecords = await _context.UsageRecords
-            .Where(r =>
-                r.Timestamp >= dayStart &&
-                r.Timestamp < dayEnd &&
-                r.EventType.Contains("DailyAggregate"))
-            .ToListAsync();
-
-        return usageRecords.Count != 0;
+        return await _dbSet.AnyAsync(r =>
+            r.Timestamp >= dayStart &&
+            r.Timestamp < dayEnd &&
+            r.EventType.Contains("DailyAggregate"));
     }
 
+    /// <summary>
+    /// Creates daily aggregates by grouping raw usage data.
+    /// </summary>
     private async Task<IEnumerable<UsageRecord>> CreateDailyAggregateAsync(DateTime date)
     {
         var dayStart = date.Date;
         var dayEnd = dayStart.AddDays(1);
 
-        var usageRecords = await _context.UsageRecords
+        var usageRecords = await _dbSet
             .Where(r =>
                 r.Timestamp >= dayStart &&
                 r.Timestamp < dayEnd &&
@@ -73,10 +60,7 @@ public class UsageRepository : IUsageRepository
 
         if (!usageRecords.Any())
         {
-            _logger.LogWarning(
-                "No usage records found for daily aggregation on {Date}",
-                dayStart
-            );
+            _logger.LogWarning("No usage records found for daily aggregation on {Date}", dayStart);
             return Enumerable.Empty<UsageRecord>();
         }
 
@@ -92,28 +76,31 @@ public class UsageRepository : IUsageRepository
             })
             .ToList();
 
-        await _context.UsageRecords.AddRangeAsync(aggregated);
-        await _context.SaveChangesAsync();
-
+        await AddRangeAsync(aggregated);
         return aggregated;
     }
 
+    /// <summary>
+    /// Deletes existing daily aggregates for the specified date.
+    /// </summary>
     public async Task DeleteDailyAggregateAsync(DateTime date)
     {
         var dayStart = date.Date;
         var dayEnd = dayStart.AddDays(1);
 
-        var usageRecords = await _context.UsageRecords
+        var usageRecords = await _dbSet
             .Where(r =>
                 r.Timestamp >= dayStart &&
                 r.Timestamp < dayEnd &&
                 r.EventType.Contains("DailyAggregate"))
             .ToListAsync();
 
-        _context.UsageRecords.RemoveRange(usageRecords);
-        await _context.SaveChangesAsync();
+        _dbSet.RemoveRange(usageRecords);
     }
 
+    /// <summary>
+    /// Creates fresh daily aggregates for the specified date, replacing old ones if they exist.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> AggregateDailyAsync(DateTime date)
     {
         if (await HasDailyAggregateAsync(date))
@@ -121,24 +108,26 @@ public class UsageRepository : IUsageRepository
             await DeleteDailyAggregateAsync(date);
             _logger.LogInformation("Deleted existing daily aggregate for {date}", date);
         }
-        
+
+        var aggregated = await CreateDailyAggregateAsync(date);
         _logger.LogInformation("Created daily aggregate for {date}", date);
-        return await CreateDailyAggregateAsync(date);
+
+        return aggregated;
     }
+
+    // ------------------------------------------------------------
+    // MONTHLY AGGREGATION
+    // ------------------------------------------------------------
 
     private async Task<bool> HasMonthlyAggregateAsync(int year, int month)
     {
         var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1);
 
-        var usageRecords = await _context.UsageRecords
-            .Where(r =>
-                r.Timestamp >= monthStart &&
-                r.Timestamp < monthEnd &&
-                r.EventType.Contains("MonthlyAggregate"))
-            .ToListAsync();
-
-        return usageRecords.Count != 0;
+        return await _dbSet.AnyAsync(r =>
+            r.Timestamp >= monthStart &&
+            r.Timestamp < monthEnd &&
+            r.EventType.Contains("MonthlyAggregate"));
     }
 
     private async Task<IEnumerable<UsageRecord>> CreateMonthlyAggregateAsync(int year, int month)
@@ -146,7 +135,7 @@ public class UsageRepository : IUsageRepository
         var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1);
 
-        var usageRecords = await _context.UsageRecords
+        var usageRecords = await _dbSet
             .Where(r =>
                 r.Timestamp >= monthStart &&
                 r.Timestamp < monthEnd &&
@@ -156,11 +145,7 @@ public class UsageRepository : IUsageRepository
 
         if (!usageRecords.Any())
         {
-            _logger.LogWarning(
-                "No usage records found for monthly aggregation: {Year}-{Month}",
-                year,
-                month
-            );
+            _logger.LogWarning("No usage records found for monthly aggregation: {Year}-{Month}", year, month);
             return Enumerable.Empty<UsageRecord>();
         }
 
@@ -176,8 +161,7 @@ public class UsageRepository : IUsageRepository
             })
             .ToList();
 
-        await _context.UsageRecords.AddRangeAsync(aggregated);
-        await _context.SaveChangesAsync();
+        await AddRangeAsync(aggregated);
 
         _logger.LogInformation(
             "Monthly aggregation completed: {Count} entries for {Year}-{Month}",
@@ -194,17 +178,19 @@ public class UsageRepository : IUsageRepository
         var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1);
 
-        var usageRecords = await _context.UsageRecords
+        var usageRecords = await _dbSet
             .Where(r =>
                 r.Timestamp >= monthStart &&
                 r.Timestamp < monthEnd &&
                 r.EventType.Contains("MonthlyAggregate"))
             .ToListAsync();
 
-        _context.UsageRecords.RemoveRange(usageRecords);
-        await _context.SaveChangesAsync();
+        _dbSet.RemoveRange(usageRecords);
     }
 
+    /// <summary>
+    /// Generates monthly aggregates, clearing existing entries first if necessary.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> AggregateMonthlyAsync(int year, int month)
     {
         if (await HasMonthlyAggregateAsync(year, month))
@@ -212,31 +198,48 @@ public class UsageRepository : IUsageRepository
             await DeleteMonthlyAggregateAsync(year, month);
             _logger.LogInformation("Deleted existing monthly aggregate for {Year}/{Month}", year, month);
         }
-        
-        _logger.LogInformation("Created daily aggregate for {Year}/{Month}", year, month);
+
         return await CreateMonthlyAggregateAsync(year, month);
     }
 
+    // ------------------------------------------------------------
+    // ANALYTICS RETRIEVAL
+    // ------------------------------------------------------------
+
+    /// <summary>
+    /// Retrieves daily analytics for a specific date.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> GetDailyAnalyticsAsync(DateTime date)
     {
         var start = date.Date;
         var end = start.AddDays(1);
 
-        return await _context.UsageRecords
+        return await _dbSet
             .Where(x => x.Timestamp >= start && x.Timestamp < end)
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves monthly analytics for a specific year and month.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> GetMonthlyAnalyticsAsync(int year, int month)
     {
         var start = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var end = start.AddMonths(1);
 
-        return await _context.UsageRecords
+        return await _dbSet
             .Where(x => x.Timestamp >= start && x.Timestamp < end)
             .ToListAsync();
     }
 
+    // ------------------------------------------------------------
+    // GENERIC QUERY FILTER
+    // ------------------------------------------------------------
+
+    /// <summary>
+    /// Queries usage events using optional filters such as event type, user, facility,
+    /// and time range. Results are ordered chronologically.
+    /// </summary>
     public async Task<IEnumerable<UsageRecord>> QueryAsync(
         string? eventType = null,
         int? userId = null,
@@ -244,7 +247,7 @@ public class UsageRepository : IUsageRepository
         DateTime? start = null,
         DateTime? end = null)
     {
-        var query = _context.UsageRecords.AsQueryable();
+        var query = _dbSet.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(eventType))
             query = query.Where(u => u.EventType == eventType);
@@ -265,8 +268,4 @@ public class UsageRepository : IUsageRepository
             .OrderBy(u => u.Timestamp)
             .ToListAsync();
     }
-
-    public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
-
-    
 }

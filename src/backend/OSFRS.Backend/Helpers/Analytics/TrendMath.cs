@@ -1,7 +1,24 @@
 namespace OSFRS.Backend.Helpers.Analytics;
 
+/// <summary>
+/// Provides mathematical helpers used for trend analysis across time-series
+/// usage data. Includes moving averages, percentage deltas, and overall
+/// growth rate computations.
+/// </summary>
 public static class TrendMath
 {
+    /// <summary>
+    /// Computes a moving average over a sequence of integer values using
+    /// the specified window size.
+    ///
+    /// If the window size is invalid (≤ 1 or larger than the dataset),
+    /// the method returns the original values converted to <see cref="double"/>.
+    /// </summary>
+    /// <param name="values">The numeric time-series values.</param>
+    /// <param name="windowSize">The number of points included in each averaged window.</param>
+    /// <returns>
+    /// A list of moving average values aligned with the original index positions.
+    /// </returns>
     public static List<double> MovingAverage(IEnumerable<int> values, int windowSize)
     {
         var list = values.ToList();
@@ -21,6 +38,17 @@ public static class TrendMath
         return result;
     }
 
+    /// <summary>
+    /// Computes the percentage change between sequential values in a time-series.
+    ///
+    /// If a previous value is zero, the change is recorded as <c>0</c> to avoid
+    /// division-by-zero errors.
+    /// </summary>
+    /// <param name="values">The numeric time-series values.</param>
+    /// <returns>
+    /// A list of percentage change values, where index <c>i</c> represents the
+    /// change from <c>values[i - 1]</c> to <c>values[i]</c>.
+    /// </returns>
     public static List<double> PercentageChanges(IEnumerable<int> values)
     {
         var list = values.ToList();
@@ -37,6 +65,17 @@ public static class TrendMath
         return changes;
     }
 
+    /// <summary>
+    /// Computes the overall growth rate from the first value in the series
+    /// to the last value, expressed as a percentage.
+    ///
+    /// If the dataset contains fewer than two points or begins with zero,
+    /// the growth rate is returned as <c>0</c>.
+    /// </summary>
+    /// <param name="values">The numeric time-series values.</param>
+    /// <returns>
+    /// The percentage growth from the first to the last value.
+    /// </returns>
     public static double GrowthRate(IEnumerable<int> values)
     {
         var list = values.ToList();

@@ -1,35 +1,58 @@
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Repositories;
-using OSFRS.Backend.Validators;
-using OSFRS.Backend.Helpers;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Service;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Validator;
+using OSFRS.Backend.Interfaces.Helper;
+using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Models.Entities;
+using OSFRS.Backend.Exceptions;
 
 namespace OSFRS.Backend.Services;
 
+/// <summary>
+/// Provides read and update operations for user profile information.
+/// Handles profile field modification, password updates, and validation.
+/// </summary>
 public class ProfileService : IProfileService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly IUserRepository _repo;
+    private readonly IPasswordHasher _pass;
     private readonly IAppLogger<ProfileService> _logger;
+    private readonly IUpdateValidator<UpdatedProfileDto, User> _validator;
 
-    public ProfileService(IUserRepository userRepository, IPasswordHasher passwordHasher, IAppLogger<ProfileService> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ProfileService"/> class.
+    /// </summary>
+    /// <param name="repo">Repository used for querying and updating user records.</param>
+    /// <param name="hasher">Password hashing abstraction.</param>
+    /// <param name="logger">Logging abstraction for profile operations.</param>
+    /// <param name="validator">Validator enforcing update rules and business logic.</param>
+    public ProfileService(
+        IUserRepository repo,
+        IPasswordHasher hasher,
+        IAppLogger<ProfileService> logger,
+        IUpdateValidator<UpdatedProfileDto, User> validator
+    )
     {
-        _userRepository = userRepository;
-        _passwordHasher = passwordHasher;
+        _repo = repo;
+        _pass = hasher;
         _logger = logger;
+        _validator = validator;
     }
 
+    /// <summary>
+    /// Retrieves a user's profile by their unique identifier.
+    /// </summary>
+    /// <param name="userId">The ID of the user whose profile is being requested.</param>
+    /// <returns>A <see cref="UserProfileDto"/> containing full profile information.</returns>
+    /// <exception cref="Exception">Thrown when the specified user does not exist.</exception>
     public async Task<UserProfileDto> GetProfileAsync(int userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
+        var user = await _repo.GetByIdAsync(userId);
+        if (user is null)
         {
-            _logger.LogWarning($"Profile fetch failed: user {userId} not found.");
-            throw new Exception("User not found.");
+            throw new NotFoundException("User not found.");
         }
-
-        _logger.LogInformation($"Profile fetched for userId: {userId}");
 
         return new UserProfileDto
         {
@@ -43,52 +66,39 @@ public class ProfileService : IProfileService
         };
     }
 
+    /// <summary>
+    /// Updates editable fields of a user's profile, including optional password changes.
+    /// </summary>
+    /// <param name="userId">The ID of the user whose profile is being modified.</param>
+    /// <param name="dto">Update request containing modified fields.</param>
+    /// <exception cref="NotFoundException">Thrown when the user cannot be found.</exception>
     public async Task UpdateProfileAsync(int userId, UpdatedProfileDto dto)
     {
-        _logger.LogInformation($"Starting profile update for userId: {userId}");
-        try
-        {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) throw new Exception("User not found.");
+        _logger.LogInformation("Updating profile for User {UserId}", userId);
 
-            // Validate data
-            if (!UserValidator.ValidateName(dto.Name)) throw new ArgumentException("Invalid name.");
-            if (!UserValidator.ValidateUsername(dto.Username)) throw new ArgumentException("Invalid username.");
-            if (!UserValidator.ValidateEmail(dto.Email)) throw new ArgumentException("Invalid email.");
-            if (dto.Password is not null && !UserValidator.ValidatePassword(dto.Password)) throw new ArgumentException("Invalid password.");
+        var user = await _repo.GetByIdAsync(userId);
+        if (user is null)
+            throw new NotFoundException("User not found.");
 
-            // Check for duplicates
-            if (user.Username != dto.Username)
-            {
-                var existingUser = await _userRepository.GetByUsernameAsync(dto.Username);
-                if (existingUser != null && existingUser.Id != user.Id)
-                    throw new Exception("Username is already taken.");
-            }
+        await _validator.ValidateAsync(dto, user);
 
-            if (user.Email != dto.Email)
-            {
-                var existingUser = await _userRepository.GetByEmailAsync(dto.Email);
-                if (existingUser != null && existingUser.Id != user.Id)
-                    throw new Exception("Email is already taken.");
-            }
-
-            // Update props
+        if (dto.Name is not null)
             user.Name = dto.Name;
+
+        if (dto.Username is not null)
             user.Username = dto.Username;
+
+        if (dto.Email is not null)
             user.Email = dto.Email;
-            user.UpdatedAt = DateTime.UtcNow;
 
-            // Hash pass if provided
-            if (!string.IsNullOrWhiteSpace(dto.Password))
-                user.PasswordHash = _passwordHasher.Hash(dto.Password);
+        if (dto.Password is not null)
+            user.PasswordHash = _pass.Hash(dto.Password);
 
-            await _userRepository.UpdateUserAsync(user);
-            _logger.LogInformation($"Profile updated successfully for userId: {userId}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Profile update failed for userId: {userId}");
-            throw;
-        }
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _repo.Update(user);
+        await _repo.SaveChangesAsync();
+
+        _logger.LogInformation("Profile updated successfully for User {UserId}", userId);
     }
 }

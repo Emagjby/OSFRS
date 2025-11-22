@@ -1,184 +1,161 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OSFRS.Backend.DTOs;
+using OSFRS.Backend.DTOs.Maintenance;
 using OSFRS.Backend.Helpers.Usage;
-using OSFRS.Backend.Interfaces;
-using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Service;
 
 namespace OSFRS.Backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/maintenance")]
+[Authorize]
 public class MaintenanceController : ControllerBase
 {
     private readonly IMaintenanceService _service;
     private readonly IUsageService _usage;
-    private readonly IAppLogger<MaintenanceController> _logger;
 
-    public MaintenanceController(IMaintenanceService service, IUsageService usage, IAppLogger<MaintenanceController> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaintenanceController"/>.
+    /// </summary>
+    /// <param name="service">The service handling maintenance operations.</param>
+    /// <param name="usage">The service used for audit logging of maintenance events.</param>
+    public MaintenanceController(IMaintenanceService service, IUsageService usage)
     {
         _service = service;
         _usage = usage;
-        _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves all maintenance records for a specific facility.
+    /// </summary>
+    /// <param name="facilityId">The ID of the facility.</param>
+    /// <returns>A list of maintenance records.</returns>
+    /// <response code="200">Returns all maintenance records for the facility.</response>
+    /// <response code="404">Facility does not exist.</response>
+    [HttpGet("facility/{facilityId}")]
+    public async Task<IActionResult> GetMaintenanceByFacility(int facilityId)
+    {
+        var records = await _service.GetMaintenanceByFacilityAsync(facilityId);
+        return Ok(records);
+    }
+
+    /// <summary>
+    /// Retrieves all upcoming (future) maintenance records.
+    /// </summary>
+    /// <returns>All future scheduled maintenance records.</returns>
+    /// <response code="200">Upcoming maintenance returned successfully.</response>
+    [HttpGet("upcoming")]
+    public async Task<IActionResult> GetUpcomingMaintenance()
+    {
+        var records = await _service.GetUpcomingMaintenanceAsync();
+        return Ok(records);
+    }
+
+    /// <summary>
+    /// Schedules a new maintenance record.
+    /// </summary>
+    /// <param name="dto">Details for the new maintenance entry.</param>
+    /// <returns>The created maintenance record.</returns>
+    /// <remarks>
+    /// Only administrators can schedule new maintenance.
+    /// A usage audit event is generated automatically.
+    /// </remarks>
+    /// <response code="200">Maintenance scheduled successfully.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="404">Facility does not exist.</response>
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ScheduleMaintenance([FromBody] CreateMaintenanceRecordDto dto)
     {
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        var created = await _service.ScheduleMaintenanceAsync(dto);
 
-            var created = await _service.ScheduleMaintenanceAsync(dto);
-
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
                 eventType: UsageEventTypes.MaintenanceScheduled,
-                userId: null, 
+                userId: null,
                 facilityId: created.FacilityId
-            ));
+            )
+        );
 
-            return Ok(created);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning("Failed to schedule maintenance due to invalid state.");
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning("Validation error while scheduling maintenance.");
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while scheduling maintenance.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        return Ok(created);
     }
 
+    /// <summary>
+    /// Updates an existing maintenance record.
+    /// </summary>
+    /// <param name="id">The ID of the maintenance record.</param>
+    /// <param name="dto">Updated maintenance data.</param>
+    /// <returns>The updated maintenance record.</returns>
+    /// <remarks>
+    /// Only administrators can update maintenance records.
+    /// A usage audit event is generated automatically.
+    /// </remarks>
+    /// <response code="200">Maintenance updated successfully.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="404">Maintenance record not found.</response>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateMaintenance(int id, [FromBody] UpdateMaintenanceRecordDto dto)
-    {        
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+    {
+        var updated = await _service.UpdateMaintenanceAsync(id, dto);
 
-            var updated = await _service.UpdateMaintenanceAsync(id, dto);
-
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
                 eventType: UsageEventTypes.MaintenanceUpdated,
                 userId: null,
                 facilityId: updated!.FacilityId
-            ));
+            )
+        );
 
-            return Ok(updated);
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning("Validation error while updating maintenance record {Id}.", id);
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning("Attempted to update non-existent maintenance record {Id}.", id);
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error updating maintenance record {Id}.", id);
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        return Ok(updated);
     }
 
+    /// <summary>
+    /// Deletes a maintenance record.
+    /// </summary>
+    /// <param name="id">The ID of the maintenance record to delete.</param>
+    /// <returns>A confirmation message.</returns>
+    /// <remarks>
+    /// Only administrators can delete maintenance records.
+    /// A usage audit event is logged when deletion occurs.
+    /// </remarks>
+    /// <response code="200">Maintenance record deleted successfully.</response>
+    /// <response code="404">Maintenance record not found.</response>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteMaintenance(int id)
     {
-        try
-        {
-            var deleted = await _service.DeleteMaintenanceAsync(id);
-            if (!deleted)
-                return NotFound(new { message = "Maintenance record not found." });
+        var deleted = await _service.DeleteMaintenanceAsync(id);
+        if (!deleted)
+            return NotFound(new { message = "Maintenance record not found." });
 
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
-                UsageEventTypes.MaintenanceDeleted
-            ));
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(UsageEventTypes.MaintenanceDeleted)
+        );
 
-            return Ok(new { message = "Maintenance record deleted successfully." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting maintenance record {Id}.", id);
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        return Ok(new { message = "Maintenance record deleted successfully." });
     }
 
-    [HttpGet("facility/{facilityId}")]
-    [Authorize]
-    public async Task<IActionResult> GetMaintenanceByFacility(int facilityId)
-    {
-        try
-        {
-            var maintenanceRecords = await _service.GetMaintenanceByFacilityAsync(facilityId);
-            if (!maintenanceRecords.Any())
-                return NotFound(new { message = "No maintenance records found for this facility." });
-
-            return Ok(maintenanceRecords);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning("Facility ID {FacilityId} not found.", facilityId);
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching maintenance records for facility {FacilityId}.", facilityId);
-            return StatusCode(500, new { message = "Internal server error." });
-        }
-    }
-
-    [HttpGet("upcoming")]
-    [Authorize]
-    public async Task<IActionResult> GetUpcomingMaintenance()
-    {
-        try
-        {
-            var maintenanceRecords = await _service.GetUpcomingMaintenanceAsync();
-            if (!maintenanceRecords.Any())
-                return NotFound(new { message = "No upcoming maintenance records found." });
-
-            return Ok(maintenanceRecords);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching upcoming maintenance records.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
-    }
-
+    /// <summary>
+    /// Synchronizes facility statuses based on active maintenance records.
+    /// </summary>
+    /// <returns>A confirmation message.</returns>
+    /// <remarks>
+    /// This operation updates each facility's status to <c>UnderMaintenance</c>
+    /// or back to <c>Available</c> depending on active maintenance windows.
+    /// Only administrators may run this operation.
+    /// </remarks>
+    /// <response code="200">Synchronization completed successfully.</response>
     [HttpPost("sync-statuses")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SyncStatuses()
     {
-        try
-        {
-            await _service.SyncFacilityStatusesAsync();
-            _logger.LogInformation("Manual facility status sync executed by admin.");
+        await _service.SyncFacilityStatusesAsync();
 
-            await _usage.LogEventAsync(UsageEventBuilder.Create(
-                UsageEventTypes.StatusSyncRun
-            ));
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(UsageEventTypes.StatusSyncRun)
+        );
 
-            return Ok(new { message = "Facility statuses synchronized successfully." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during manual facility status synchronization.");
-            return StatusCode(500, new { message = "Internal server error." });
-        }
+        return Ok(new { message = "Facility statuses synchronized successfully." });
     }
 }

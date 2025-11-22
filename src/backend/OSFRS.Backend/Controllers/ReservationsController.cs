@@ -1,70 +1,65 @@
 using Microsoft.AspNetCore.Mvc;
-using OSFRS.Backend.DTOs;
-using OSFRS.Backend.Interfaces;
-using OSFRS.Backend.Interfaces.Logging;
-using OSFRS.Backend.Validators;
 using OSFRS.Backend.Helpers.Auth;
 using Microsoft.AspNetCore.Authorization;
 using OSFRS.Backend.Helpers.Usage;
+using OSFRS.Backend.Interfaces.Service;
+using OSFRS.Backend.DTOs.Reservations;
 
 namespace OSFRS.Backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/reservations")]
 public class ReservationsController : ControllerBase
 {
     private readonly IReservationService _service;
     private readonly IUsageService _usage;
-    private readonly IAppLogger<ReservationsController> _logger;
 
-    public ReservationsController(IReservationService service, IUsageService usage, IAppLogger<ReservationsController> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReservationsController"/>.
+    /// </summary>
+    /// <param name="service">Service handling reservation operations.</param>
+    /// <param name="usage">Service responsible for usage event logging.</param>
+    public ReservationsController(IReservationService service, IUsageService usage)
     {
         _service = service;
         _usage = usage;
-        _logger = logger;
     }
 
+    /// <summary>
+    /// Returns the availability calendar for a given facility and day.
+    /// </summary>
+    /// <param name="facilityId">The facility identifier.</param>
+    /// <param name="date">Optional specific date to filter availability.</param>
+    /// <returns>A list of availability slots.</returns>
+    /// <response code="200">Returns calendar data.</response>
     [HttpGet("availability/{facilityId}")]
     public async Task<IActionResult> GetAvailabilityCalendar(int facilityId, [FromQuery] DateTime? date)
     {
-        try
-        {
-            if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
-
-            var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
-            if (!calendar.Any())
-            {
-                _logger.LogInformation("No reservations found for facility {FacilityId} on {Date}", facilityId, date ?? DateTime.UtcNow);
-                return NotFound("No reservations found for this facility on the specified date.");
-            }
-
-            return Ok(calendar);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving availability for facility {FacilityId}", facilityId);
-            return StatusCode(500, "Internal server error while fetching availability.");
-        }
+        var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
+        return Ok(calendar);
     }
 
+    /// <summary>
+    /// Returns all reservations for a facility within an optional date range.
+    /// </summary>
+    /// <param name="facilityId">The facility identifier.</param>
+    /// <param name="start">Start of the date range.</param>
+    /// <param name="end">End of the date range.</param>
+    /// <returns>A list of reservations.</returns>
+    /// <response code="200">Reservations successfully returned.</response>
     [Authorize(Roles = "Admin")]
     [HttpGet("facility/{facilityId}")]
     public async Task<IActionResult> GetReservations(int facilityId, [FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
-        try
-        {
-            if (!ReservationValidator.ValidateFacilityId(facilityId)) return BadRequest("Invalid facility ID.");
-
-            var reservations = await _service.GetReservationsAsync(facilityId, start, end);
-            return Ok(reservations);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving reservations for facility {FacilityId}", facilityId);
-            return StatusCode(500, "Internal server error while fetching reservation.");
-        }
+        var reservations = await _service.GetReservationsAsync(facilityId, start, end);
+        return Ok(reservations);
     }
 
+    /// <summary>
+    /// Searches reservations using flexible filters: user, facility, and time range.
+    /// </summary>
+    /// <returns>A filtered list of reservations.</returns>
+    /// <response code="200">Search results returned.</response>
     [Authorize(Roles = "Admin")]
     [HttpGet("search")]
     public async Task<IActionResult> SearchReservation(
@@ -74,290 +69,170 @@ public class ReservationsController : ControllerBase
         [FromQuery] DateTime? end
     )
     {
-        try
-        {
-            var results = await _service.SearchReservationAsync(userId, facilityId, start, end);
-            return Ok(results);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error searching reservations.");
-            return StatusCode(500, "Internal server error while searching reservations.");
-        }
+        var results = await _service.SearchReservationAsync(userId, facilityId, start, end);
+        return Ok(results);
     }
 
-    [HttpPost("create")]
+    /// <summary>
+    /// Creates a reservation for the authenticated user.
+    /// </summary>
+    /// <param name="dto">Reservation creation data.</param>
+    /// <returns>The created reservation.</returns>
+    /// <response code="200">Reservation created.</response>
+    /// <response code="400">Validation failure.</response>
+    /// <response code="409">Slot conflict.</response>
+    [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
     {
-        try
-        {
-            var userId = UserContextHelper.GetUserId(User);
-            if (userId == null) return Unauthorized("User ID not found in token.");
+        var userId = UserContextHelper.GetUserId(User)!.Value;
 
-            var reservation = await _service.CreateReservationAsync(dto, userId.Value);
+        var reservation = await _service.CreateReservationAsync(dto, userId);
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationCreated,
-                    userId: userId.Value,
-                    facilityId: reservation.FacilityId,
-                    metadata: new() { { "ReservationId", reservation.Id.ToString() } }
-                )
-            );
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationCreated,
+                userId: userId,
+                facilityId: reservation.FacilityId,
+                metadata: new() { { "ReservationId", reservation.Id.ToString() } }
+            )
+        );
 
-            return Ok(reservation);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error creating reservation.");
-            return StatusCode(500, "Internal server error while creating reservation.");
-        }
+        return Ok(reservation);
     }
 
-    [HttpPut("update/{id}")]
+    /// <summary>
+    /// Updates a reservation owned by the authenticated user.
+    /// </summary>
+    /// <param name="id">Reservation identifier.</param>
+    /// <param name="dto">Updated reservation information.</param>
+    /// <returns>The updated reservation.</returns>
+    /// <response code="200">Reservation updated.</response>
+    /// <response code="403">User not allowed to modify this reservation.</response>
+    /// <response code="400">Validation failure.</response>
+    [HttpPut("{id}")]
     [Authorize]
     public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationDto dto)
     {
-        try
-        {
-            if (!ReservationValidator.ValidateUpdate(dto)) return BadRequest("Invalid reservation update data.");
+        var userId = UserContextHelper.GetUserId(User)!.Value;
 
-            var userId = UserContextHelper.GetUserId(User);
-            if (userId == null) return Unauthorized("User ID not found in token.");
+        var updated = await _service.UpdateReservationAsync(id, dto, userId);
 
-            var updatedReservation = await _service.UpdateReservationAsync(id, dto, userId.Value);
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationUpdated,
+                userId: userId,
+                facilityId: updated.FacilityId,
+                metadata: new() { { "ReservationId", updated.Id.ToString() } }
+            )
+        );
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationUpdated,
-                    userId: userId.Value,
-                    facilityId: updatedReservation.FacilityId,
-                    metadata: new() { { "ReservationId", updatedReservation.Id.ToString() } }
-                )
-            );
-
-            return Ok(updatedReservation);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error updating reservation {ReservationId}", id);
-            return StatusCode(500, "Internal server error while updating reservation.");
-        }
+        return Ok(updated);
     }
 
+    /// <summary>
+    /// Cancels a reservation owned by the authenticated user.
+    /// </summary>
+    /// <param name="id">Reservation identifier.</param>
+    /// <returns>A status message.</returns>
+    /// <response code="200">Reservation cancelled.</response>
+    /// <response code="403">User cannot cancel this reservation.</response>
     [HttpPut("cancel/{id}")]
     [Authorize]
     public async Task<IActionResult> CancelReservation(int id)
     {
-        try
-        {
-            if (!ReservationValidator.ValidateReservationId(id)) return BadRequest("Invalid reservation ID.");
+        var userId = UserContextHelper.GetUserId(User)!.Value;
 
-            var userId = UserContextHelper.GetUserId(User);
-            if (userId == null) return Unauthorized("User ID not found in token.");
+        await _service.CancelReservationAsync(id, userId);
 
-            await _service.CancelReservationAsync(id, userId.Value);
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationCancelled,
+                userId: userId,
+                metadata: new() { { "ReservationId", id.ToString() } }
+            )
+        );
 
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationCancelled,
-                    userId: userId.Value,
-                    facilityId: null,
-                    metadata: new() { { "ReservationId", id.ToString() } }
-                )
-            );
-
-            return Ok(new { message = "Reservation cancelled successfully." });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error cancelling reservation {ReservationId}", id);
-            return StatusCode(500, "Internal server error while cancelling reservation.");
-        }
+        return Ok(new { message = "Reservation cancelled successfully." });
     }
 
+    /// <summary>
+    /// Returns all reservations belonging to the authenticated user.
+    /// </summary>
+    /// <returns>The user's reservations.</returns>
+    /// <response code="200">Reservations returned.</response>
     [Authorize]
     [HttpGet("my")]
     public async Task<IActionResult> GetMyReservations()
     {
         var userId = UserContextHelper.GetUserId(User);
-        if (userId == null)
-            return Unauthorized(new { message = "User ID not found in token." });
-        
-        try
-        {
-            var myReservations = await _service.SearchReservationAsync(userId, null, null, null);
-            if (!myReservations.Any())
-            {
-                _logger.LogInformation("No reservations found for user {UserId}.", userId);
-                return NotFound("You have no active or past reservations.");
-            }
-            
-            _logger.LogInformation("User {UserId} fetched {Count} reservations.", userId, myReservations.Count());
-            return Ok(myReservations);
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning("Invalid parameters while fetching reservations for user {UserId}.", userId);
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning("Operation failed while fetching reservations for user {UserId}.", userId);
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while fetching reservations for user {UserId}.", userId);
-            return StatusCode(500, new { message = "Internal server error while fetching your reservations." });
-        }
+
+        var reservations = await _service.SearchReservationAsync(userId: userId);
+        return Ok(reservations);
     }
 
+    /// <summary>
+    /// Returns all reservations in the system.
+    /// </summary>
+    /// <response code="200">All reservations returned.</response>
     [Authorize(Roles = "Admin")]
-    [HttpGet("admin/all")]
+    [HttpGet]
     public async Task<IActionResult> GetAllReservations()
     {
-        try
-        {
-            var reservations = await _service.GetAllReservationsAsync();
-
-            if (!reservations.Any())
-            {
-                _logger.LogInformation("No reservations found when fetching all (admin request).");
-                return NotFound(new { message = "No reservations found in the system." });
-            }
-
-            _logger.LogInformation("Admin fetched {Count} total reservations.", reservations.Count());
-            return Ok(reservations);
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching all reservations (admin request).");
-            return StatusCode(500, new { message = "Internal server error while fetching reservations" });
-        }
+        var reservations = await _service.GetAllReservationsAsync();
+        return Ok(reservations);
     }
 
+    /// <summary>
+    /// Allows an admin to update any reservation and override conflicts.
+    /// </summary>
+    /// <param name="id">Reservation identifier.</param>
+    /// <param name="dto">Updated reservation data.</param>
+    /// <returns>The updated reservation.</returns>
+    /// <response code="200">Reservation updated.</response>
     [Authorize(Roles = "Admin")]
     [HttpPut("admin/update/{id}")]
     public async Task<IActionResult> AdminUpdateReservation(int id, [FromBody] UpdateReservationDto dto)
     {
-        try
-        {
-            if (!ReservationValidator.ValidateReservationId(id))
-                return BadRequest(new { message = "Invalid reservation ID." });
+        var adminId = UserContextHelper.GetUserId(User)!.Value;
 
-            if (!ReservationValidator.ValidateUpdate(dto))
-                return BadRequest(new { message = "Invalid reservation update data." });
+        var updated = await _service.AdminUpdateReservationAsync(id, dto, adminId);
 
-            var adminId = UserContextHelper.GetUserId(User);
-            if (adminId == null)
-                return Unauthorized(new { message = "Admin ID not found in token." });
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationAdminUpdated,
+                userId: adminId,
+                facilityId: updated.FacilityId,
+                metadata: new() { { "ReservationId", id.ToString() } }
+            )
+        );
 
-            var updatedReservation = await _service.AdminUpdateReservationAsync(id, dto, adminId.Value);
-
-            _logger.LogInformation("Admin {AdminId} successfully updated reservation {ReservationId}.", adminId, id);
-
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationAdminUpdated,
-                    userId: adminId.Value,
-                    facilityId: updatedReservation.FacilityId,
-                    metadata: new() { { "ReservationId", id.ToString() } }
-                )
-            );
-
-            return Ok(updatedReservation);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while admin updating reservation {ReservationId}", id);
-            return StatusCode(500, new { message = "Internal server error while updating reservation." });
-        }
+        return Ok(updated);
     }
 
+    /// <summary>
+    /// Allows an admin to delete any reservation.
+    /// </summary>
+    /// <param name="id">Reservation identifier.</param>
+    /// <returns>A status message.</returns>
+    /// <response code="200">Reservation deleted.</response>
+    /// <response code="404">Reservation not found.</response>
     [Authorize(Roles = "Admin")]
-    [HttpDelete("admin/delete/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> AdminDeleteReservation(int id)
     {
-        try
-        {
-            if (!ReservationValidator.ValidateReservationId(id))
-                return BadRequest(new { message = "Invalid reservation ID." });
+        var adminId = UserContextHelper.GetUserId(User)!.Value;
 
-            var adminId = UserContextHelper.GetUserId(User);
-            if (adminId == null)
-            {
-                return Unauthorized(new { message = "Admin ID not found in token." });
-            }
+        await _service.DeleteReservationAsync(id, adminId);
 
-            await _service.DeleteReservationAsync(id, adminId.Value);
+        await _usage.LogEventAsync(
+            UsageEventBuilder.Create(
+                UsageEventTypes.ReservationDeleted,
+                userId: adminId,
+                metadata: new() { { "ReservationId", id.ToString() } }
+            )
+        );
 
-            _logger.LogInformation("Admin {AdminId} successfully deleted reservation {ReservationId}.", adminId, id);
-
-            await _usage.LogEventAsync(
-                UsageEventBuilder.Create(
-                    eventType: UsageEventTypes.ReservationDeleted,
-                    userId: adminId.Value,
-                    facilityId: null,
-                    metadata: new() { { "ReservationId", id.ToString() } }
-                )
-            );
-
-            return Ok(new { message = "Reservation deleted successfully." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deleting reservation {ReservationId} by admin.", id);
-            return StatusCode(500, new { message = "Internal server error while deleting reservation." });
-        }
+        return Ok(new { message = "Reservation deleted successfully." });
     }
 }

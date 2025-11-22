@@ -7,11 +7,27 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using System.Text;
-using OSFRS.Backend.Interfaces;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
 using Hangfire;
 using Hangfire.PostgreSql;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
+using OSFRS.Backend.Interfaces.Helper;
+using OSFRS.Backend.DTOs.Auth;
+using OSFRS.Backend.Interfaces.Validator;
+using OSFRS.Backend.Validators.Auth;
+using OSFRS.Models.Entities;
+using OSFRS.Backend.DTOs.Facilities;
+using OSFRS.Backend.Validators.Facilities;
+using OSFRS.Backend.Validators.Reservations;
+using OSFRS.Backend.DTOs.Reservations;
+using OSFRS.Backend.Validators.Usage;
+using OSFRS.Backend.Validators.Maintenance;
+using OSFRS.Backend.DTOs.Maintenance;
+using OSFRS.Backend.Middleware;
+using Microsoft.AspNetCore.Mvc;
+using System.Reflection;
 
 Env.Load();
 
@@ -29,10 +45,13 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
         throw new Exception("Database connection string not found in envvars");
 
     builder.Services.AddDbContext<OSFRSDbContext>(options =>
-        options.UseNpgsql(connString)); 
+        options.UseNpgsql(connString));
 }
 
 // Dependency Injection
+builder.Services.AddScoped<FacilityAvailabilityValidator>();
+builder.Services.AddScoped<CancelReservationValidator>();
+builder.Services.AddScoped<UsageQueryValidator>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -50,7 +69,17 @@ builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+builder.Services.AddScoped<IValidator<LoginRequestDto>, UserLoginValidator>();
+builder.Services.AddScoped<IValidator<UserRegistrationDto>, UserRegistrationValidator>();
+builder.Services.AddScoped<IValidator<CreateFacilityDto>, CreateFacilityValidator>();
+builder.Services.AddScoped<IValidator<(CreateReservationDto, int)>, CreateReservationValidator>();
+builder.Services.AddScoped<IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)>, UpdateReservationValidator>();
+builder.Services.AddScoped<IValidator<CreateMaintenanceRecordDto>, CreateMaintenanceValidator>();
+builder.Services.AddScoped<IUpdateValidator<UpdatedProfileDto, User>, ProfileUpdateValidator>();
+builder.Services.AddScoped<IUpdateValidator<UpdateFacilityDto, Facility>, UpdateFacilityValidator>();
+builder.Services.AddScoped<IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord>, UpdateMaintenanceValidator>();
+
+builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Hangfire setup
 builder.Services.AddHangfire((sp, config) =>
@@ -88,6 +117,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value!.Errors.Any())
+            .Select(x => x.Value!.Errors.First().ErrorMessage)
+            .ToArray();
+
+        return new BadRequestObjectResult(errors);
+    };
+});
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+
+    options.CustomSchemaIds(type => type.FullName);
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -97,7 +149,7 @@ using (var scope = app.Services.CreateScope())
     jobManager.AddOrUpdate<IUsageService>(
         "daily-usage-aggregation",
         service => service.AggregateAsync(),
-        "5 0 * * *"   // every day at 00:05 UTC
+        "55 23 * * *"
     );
 
     jobManager.AddOrUpdate<IMaintenanceService>(
@@ -109,17 +161,26 @@ using (var scope = app.Services.CreateScope())
 
 app.UseRouting();
 
-// Add JWT auth middleware
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
 {
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
-        Authorization = [ new AllowAllHangfireAuthFilter() ]
+        Authorization = [new AllowAllHangfireAuthFilter()]
+    });
+
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "OSFRS API Docs";
+        options.DisplayRequestDuration();
     });
 }
+
+// Add JWT auth middleware
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map controllers
 app.MapControllers();
