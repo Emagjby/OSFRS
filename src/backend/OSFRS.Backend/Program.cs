@@ -168,8 +168,8 @@ using (var scope = app.Services.CreateScope())
     );
 
     jobManager.AddOrUpdate<IMaintenanceService>(
-        "facility-status-sync",
-        service => service.SyncFacilityStatusesAsync(),
+        "status-sync",
+        service => service.SyncStatusesAsync(),
         "*/5 * * * *" // every 5 minutes
     );
 }

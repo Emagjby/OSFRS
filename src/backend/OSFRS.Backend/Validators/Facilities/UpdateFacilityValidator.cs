@@ -1,4 +1,5 @@
 using OSFRS.Backend.DTOs.Facilities;
+using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Backend.Validators.Base;
@@ -66,7 +67,7 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
             // Prevent UnderMaintenance -> Available transition unless maintenance ended
             if (existing.Status == "UnderMaintenance" && dto.Status == "Available")
             {
-                Forbidden("Facility cannot be marked as Available until maintenance ends.");
+                throw new ConflictException("Facility cannot be marked as Available until maintenance ends.");
             }
 
             // Prevent marking Available during active maintenance
@@ -74,12 +75,12 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
             var activeMaintenance = await _repo.GetByFacilityAsync(existing.Id);
 
             bool isUnderMaintenance = activeMaintenance.Any(m =>
-                now >= m.StartTime && now <= m.EndTime
+                m.Status == "InProgress"
             );
 
             if (dto.Status == "Available" && isUnderMaintenance)
             {
-                Forbidden("Facility is currently under maintenance and cannot be marked Available.");
+                throw new ConflictException("Facility is currently under maintenance and cannot be marked Available.");
             }
         }
     }

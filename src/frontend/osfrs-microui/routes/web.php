@@ -13,4 +13,11 @@ Route::view('/microui/facility/delete', 'microui.facility.delete');
 Route::view('/microui/facility/availability', 'microui.facility.availability');
 Route::view('/microui/facility/availability-update', 'microui.facility.availability-update');
 
+Route::view('/microui/maintenance/list-by-facility', 'microui.maintenance.list-by-facility');
+Route::view('/microui/maintenance/upcoming', 'microui.maintenance.upcoming');
+Route::view('/microui/maintenance/schedule', 'microui.maintenance.schedule');
+Route::view('/microui/maintenance/update', 'microui.maintenance.update');
+Route::view('/microui/maintenance/delete', 'microui.maintenance.delete');
+Route::view('/microui/maintenance/sync-statuses', 'microui.maintenance.sync-statuses');
+
 Route::redirect('/', '/microui/auth/login');

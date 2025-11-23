@@ -141,7 +141,7 @@ button {
 }
 
 /* Facility Table Styling */
-#facilityTable {
+.dataTable {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
@@ -150,7 +150,7 @@ button {
     font-size: 15px;
 }
 
-#facilityTable th {
+.dataTable th {
     background: #222;
     color: #4fc3f7;
     padding: 10px;
@@ -159,19 +159,19 @@ button {
     text-align: center;
 }
 
-#facilityTable td {
+.dataTable td {
     padding: 10px;
     border-bottom: 1px solid #333;
     text-align: center;
 }
 
-#facilityTable tr:hover {
+.dataTable tr:hover {
     background: #2a2a2a;
     transition: background 0.2s ease-in-out;
 }
 
 /* Delete button style */
-#facilityTable button {
+.dataTable button {
     background: #e74c3c;
     border: none;
     color: #fff;
@@ -182,13 +182,13 @@ button {
     margin: 0;
 }
 
-#facilityTable button:hover {
+.dataTable button:hover {
     background: #c0392b;
     color: #fff;
     transition: 0.15s ease-in-out;
 }
 
 /* Make table scrollable on small screens */
-#facilityTableWrapper {
+.dataTableWrapper {
     overflow-x: auto;
 }

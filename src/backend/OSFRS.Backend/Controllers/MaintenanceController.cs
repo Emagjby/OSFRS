@@ -137,20 +137,23 @@ public class MaintenanceController : ControllerBase
     }
 
     /// <summary>
-    /// Synchronizes facility statuses based on active maintenance records.
+    /// Triggers a full synchronization of maintenance records and facility statuses.
     /// </summary>
     /// <returns>A confirmation message.</returns>
     /// <remarks>
-    /// This operation updates each facility's status to <c>UnderMaintenance</c>
-    /// or back to <c>Available</c> depending on active maintenance windows.
-    /// Only administrators may run this operation.
+    /// This endpoint recalculates maintenance states (Scheduled, InProgress, Completed)
+    /// and updates related facilities accordingly, marking them as
+    /// <c>UnderMaintenance</c> when an active maintenance window is detected or
+    /// reverting them to <c>Available</c> when no such window exists.
+    ///
+    /// Only administrators are authorized to perform this operation.
     /// </remarks>
     /// <response code="200">Synchronization completed successfully.</response>
     [HttpPost("sync-statuses")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SyncStatuses()
     {
-        await _service.SyncFacilityStatusesAsync();
+        await _service.SyncStatusesAsync();
 
         await _usage.LogEventAsync(
             UsageEventBuilder.Create(UsageEventTypes.StatusSyncRun)

@@ -25,6 +25,17 @@
                     <a href="/microui/facility/availability-update">Update Availability</a>
                 </div>
             </div>
+            <div class="dropdown">
+                <a class="dropbtn">Maintenance</a>
+                <div class="dropdown-content">
+                    <a href="/microui/maintenance/list-by-facility">Get Maintenance by Facility ID</a>
+                    <a href="/microui/maintenance/upcoming">Get Upcoming Maintenances</a>
+                    <a href="/microui/maintenance/schedule">Schedule Maintenance</a>
+                    <a href="/microui/maintenance/update">Update Maintenance</a>
+                    <a href="/microui/maintenance/delete">Delete Maintenance</a>
+                    <a href="/microui/maintenance/sync-statuses">Sync Statuses</a>
+                </div>
+            </div>
         </div>
 
         <div class="right">

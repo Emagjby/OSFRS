@@ -180,7 +180,7 @@ public class ReservationService : IReservationService
     /// Retrieves all reservations in the system.
     /// </summary>
     public async Task<IEnumerable<Reservation>> GetAllReservationsAsync()
-        => await _repo.GetAllAsync();
+        => await _repo.GetAllReadonlyAsync();
 
     /// <summary>
     /// Deletes a reservation as an administrator.

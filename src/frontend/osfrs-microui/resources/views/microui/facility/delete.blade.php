@@ -3,7 +3,7 @@
 @section('content')
 <h2>Delete Facility</h2><br>
 
-<table id="facilityTable" border="1" cellpadding="6" style="border-color:#444; color:#ddd; width: 100%; background:#222;">
+<table id="facilityTable" border="1" cellpadding="6" class="dataTable">
     <thead>
         <tr>
             <th>ID</th>

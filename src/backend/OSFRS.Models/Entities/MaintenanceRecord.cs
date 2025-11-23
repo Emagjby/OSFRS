@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace OSFRS.Models.Entities;
 
@@ -8,6 +9,8 @@ public class MaintenanceRecord
     public int Id { get; set; } // Primary Key
 
     public int FacilityId { get; set; } // Foreign Key
+
+    [JsonIgnore]
     public Facility Facility { get; set; } = null!;
 
     [Required]

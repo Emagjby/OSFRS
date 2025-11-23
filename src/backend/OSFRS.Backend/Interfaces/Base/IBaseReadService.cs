@@ -30,5 +30,5 @@ public interface IBaseReadService<TDto>
     /// <returns>
     /// A collection of all available <typeparamref name="TDto"/> records.
     /// </returns>
-    Task<IEnumerable<TDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<TDto>> GetAllReadonlyAsync(CancellationToken cancellationToken = default);
 }

@@ -27,13 +27,23 @@ public interface IBaseRepository<TEntity> where TEntity : class
     Task<TEntity?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves all entities of type <typeparamref name="TEntity"/>.
+    /// Retrieves all entities of type <typeparamref name="TEntity"/> without enabling change tracking.
     /// </summary>
     /// <param name="cancellationToken">A token used to observe cancellation requests.</param>
     /// <returns>
-    /// A read-only list containing all persisted <typeparamref name="TEntity"/> records.
+    /// A read-only list of <typeparamref name="TEntity"/> instances intended for query operations.
+    /// </returns>
+    Task<IReadOnlyList<TEntity>> GetAllReadonlyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all entities of type <typeparamref name="TEntity"/> with change tracking enabled.
+    /// </summary>
+    /// <param name="cancellationToken">A token used to observe cancellation requests.</param>
+    /// <returns>
+    /// A list of tracked <typeparamref name="TEntity"/> instances suitable for update operations.
     /// </returns>
     Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
+
 
     /// <summary>
     /// Retrieves entities that satisfy the provided predicate.

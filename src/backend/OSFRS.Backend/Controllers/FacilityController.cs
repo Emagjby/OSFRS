@@ -34,7 +34,7 @@ public class FacilityController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var facilities = await _facility.GetAllAsync();
+        var facilities = await _facility.GetAllReadonlyAsync();
         return Ok(facilities);
     }
 

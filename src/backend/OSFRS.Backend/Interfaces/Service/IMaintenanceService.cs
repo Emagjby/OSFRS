@@ -55,8 +55,7 @@ public interface IMaintenanceService
     Task<IEnumerable<MaintenanceRecord>> GetUpcomingMaintenanceAsync();
 
     /// <summary>
-    /// Synchronizes facility statuses based on active maintenance windows.
-    /// Marks facilities as UnderMaintenance or Available accordingly.
+    /// Synchronizes maintenance records and facility availability based on current time.
     /// </summary>
-    Task SyncFacilityStatusesAsync();
+    Task SyncStatusesAsync();
 }
