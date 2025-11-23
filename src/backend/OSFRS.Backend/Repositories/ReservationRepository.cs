@@ -3,6 +3,7 @@ using OSFRS.Backend.Data;
 using OSFRS.Backend.Interfaces.Logging;
 using Microsoft.EntityFrameworkCore;
 using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Exceptions;
 
 namespace OSFRS.Backend.Repositories;
 
@@ -132,18 +133,12 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <param name="id">Reservation identifier.</param>
     /// <param name="status">New status value.</param>
     /// <returns>The updated reservation.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the reservation does not exist.</exception>
     public async Task<Reservation?> UpdateStatusAsync(int id, string status)
     {
-        var reservation = await _dbSet.FindAsync(id);
+        var reservation = await _dbSet.FindAsync(id)
+            ?? throw new NotFoundException("Reservation not found.");
 
-        if (reservation == null)
-        {
-            _logger.LogWarning("Attempted to update status for non-existant reservation {ReservationId}", id);
-            throw new InvalidOperationException("Reservation not found.");
-        }
-
-        reservation.Status = status;
+        reservation!.Status = status;
         reservation.UpdatedAt = DateTime.UtcNow;
 
         _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);

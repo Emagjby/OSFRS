@@ -32,6 +32,16 @@ public class AppLogger<T> : IAppLogger<T>
     }
 
     /// <summary>
+    /// Logs an error with no exception details.
+    /// </summary>
+    /// <param name="message">The log message.</param>
+    /// <param name="args">Structured logging arguments.</param>
+    public void LogError(string message, params object[] args)
+    {
+        _logger.LogError(message, args);
+    }
+
+    /// <summary>
     /// Logs an informational message.
     /// </summary>
     /// <param name="message">The log message.</param>

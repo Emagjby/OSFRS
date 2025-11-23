@@ -137,7 +137,7 @@ public class FacilityController : ControllerBase
             UsageEventBuilder.Create(
                 UsageEventTypes.FacilityDeleted,
                 userId: UserContextHelper.GetUserId(User),
-                facilityId: id
+                metadata: new() { { "FacilityId", id.ToString() } }
             )
         );
 

@@ -193,11 +193,11 @@ if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
     });
 }
 
+app.UseCors("AllowMicroUI");
+
 // Add JWT auth middleware
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseCors("AllowMicroUI");
 
 // Map controllers
 app.MapControllers();

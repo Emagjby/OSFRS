@@ -1,4 +1,5 @@
 using OSFRS.Backend.Data;
+using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Models.Entities;
@@ -36,15 +37,10 @@ public class FacilityRepository : BaseRepository<Facility>, IFacilityRepository
     {
         _logger.LogInformation("Checking availability for Facility ID {FacilityId}...", facilityId);
 
-        var facility = await _dbSet.FindAsync(facilityId);
+        var facility = await _dbSet.FindAsync(facilityId)
+            ?? throw new NotFoundException("Facility not found.");
 
-        if (facility == null)
-        {
-            _logger.LogWarning("Facility ID {Id} not found", facilityId);
-            throw new InvalidOperationException($"Facility with ID {facilityId} not found.");
-        }
-
-        bool available = facility.Status == "Available";
+        bool available = facility!.Status == "Available";
 
         _logger.LogInformation(
             "Facility ID {FacilityId} availability = {Available}.",
@@ -66,17 +62,10 @@ public class FacilityRepository : BaseRepository<Facility>, IFacilityRepository
     {
         _logger.LogInformation("Updating availability for Facility ID {Id}", facilityId);
 
-        var facility = await _dbSet.FindAsync(facilityId);
-        if (facility == null)
-        {
-            _logger.LogWarning(
-                "Attempted to update availability of non-existent facility with ID {Id}.",
-                facilityId
-            );
-            throw new InvalidOperationException("Facility not found.");
-        }
+        var facility = await _dbSet.FindAsync(facilityId)
+            ?? throw new NotFoundException("Facility not found.");
 
-        facility.Status = isAvailable ? "Available" : "Unavailable";
+        facility!.Status = isAvailable ? "Available" : "Unavailable";
         facility.UpdatedAt = DateTime.UtcNow;
 
         _logger.LogInformation(

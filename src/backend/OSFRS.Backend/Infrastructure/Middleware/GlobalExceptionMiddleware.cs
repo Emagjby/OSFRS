@@ -71,7 +71,7 @@ public class GlobalExceptionMiddleware
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
         };
 
-        _logger.LogError(ex, "Exception caught by global handler: {Message}", ex.Message);
+        _logger.LogError("Exception caught by global handler: {Message}", ex.Message);
 
         ctx.Response.ContentType = "application/json";
         ctx.Response.StatusCode = (int)status;

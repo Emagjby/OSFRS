@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace OSFRS.Backend.DTOs.Facilities;
 
 /// <summary>

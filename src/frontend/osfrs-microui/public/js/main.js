@@ -16,11 +16,14 @@ function refreshAuthUI() {
     if (!token) return showLoggedOutUI();
 
     const payload = decodeJwtPayload(token);
-    console.log(payload);
+    if (payload.exp * 1000 < Date.now()) {
+        console.log("JWT expired, logging out.");
+        return logout();
+    }
 
     if (payload && payload.unique_name) {
         document.getElementById("greeter").innerText =
-            "Welcome back, " + payload.unique_name + "!";
+            `Welcome back, ${payload.unique_name}! (${payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]})`;
 
         document.querySelectorAll(".loggedIn").forEach((el) => {
             el.style.display = "flex";
@@ -61,18 +64,21 @@ async function apiRequest(path, method = "GET", body = null) {
         const res = await fetch("http://localhost:5025" + path, {
             method,
             headers,
-            body: body ? JSON.stringify(body) : null,
+            body: body ? JSON.stringify(body) : body,
         });
 
-        // Read raw text first
+        if (res.status == 403) {
+            showResponse({ error: "This action requires admin priviledges." });
+            return;
+        }
+
         const text = await res.text();
 
-        // Try JSON parsing
         let data;
         try {
             data = JSON.parse(text);
         } catch {
-            data = text; // fallback to plain text
+            data = text;
         }
 
         showResponse(data);

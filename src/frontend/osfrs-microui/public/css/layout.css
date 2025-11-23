@@ -139,3 +139,56 @@ button {
         opacity 0.3s ease-out,
         transform 0s linear 2s;
 }
+
+/* Facility Table Styling */
+#facilityTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #1a1a1a;
+    color: #ddd;
+    font-size: 15px;
+}
+
+#facilityTable th {
+    background: #222;
+    color: #4fc3f7;
+    padding: 10px;
+    border-bottom: 2px solid #444;
+    font-weight: bold;
+    text-align: center;
+}
+
+#facilityTable td {
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+}
+
+#facilityTable tr:hover {
+    background: #2a2a2a;
+    transition: background 0.2s ease-in-out;
+}
+
+/* Delete button style */
+#facilityTable button {
+    background: #e74c3c;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+    margin: 0;
+}
+
+#facilityTable button:hover {
+    background: #c0392b;
+    color: #fff;
+    transition: 0.15s ease-in-out;
+}
+
+/* Make table scrollable on small screens */
+#facilityTableWrapper {
+    overflow-x: auto;
+}

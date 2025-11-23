@@ -35,4 +35,11 @@ public interface IAppLogger<T>
     /// <param name="message">A descriptive message of the error scenario.</param>
     /// <param name="args">Optional structured log arguments.</param>
     void LogError(Exception ex, string message, params object[] args);
+
+    /// <summary>
+    /// Writes an error message without an associated exception.
+    /// </summary>
+    /// <param name="message">The log message.</param>
+    /// <param name="args">Structured logging arguments.</param>
+    public void LogError(string message, params object[] args);
 }

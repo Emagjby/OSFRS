@@ -44,11 +44,13 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
         if (dto.Name is not null)
         {
             Require(!string.IsNullOrWhiteSpace(dto.Name), "Name cannot be empty.");
+            Require(dto.Name.Length <= 100, "Name cannot exceed 100 characters.");
         }
 
         // TYPE (future rules)
-        // if (dto.Type is not null)
-        //     Require(AllowedTypes.Contains(dto.Type), $"Invalid facility type '{dto.Type}'.");
+        // Require(AllowedTypes.Contains(dto.Type), $"Invalid facility type '{dto.Type}'.");
+        if (dto.Type is not null)
+            Require(dto.Type.Length <= 50, "Type cannot exceed 50 characters.");
 
         // CAPACITY
         if (dto.Capacity is not null)
