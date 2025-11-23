@@ -28,6 +28,7 @@ using OSFRS.Backend.DTOs.Maintenance;
 using OSFRS.Backend.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
+using Sprache;
 
 Env.Load();
 
@@ -140,6 +141,20 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName);
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowMicroUI", policy =>
+    {
+        policy.WithOrigins(
+            "http://127.0.0.1:8000",
+            "http://localhost:8000"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -182,11 +197,13 @@ if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseCors("AllowMicroUI");
+
 // Map controllers
 app.MapControllers();
 
 // Debug
-app.MapGet("/", () => "API is running!");
+app.MapGet("/health", () => "API is running... (v2)");
 
 app.Run();
 
