@@ -51,6 +51,10 @@ async function loadFacilities() {
 }
 
 async function deleteFacility(id) {
+    const confirmed = confirm(`Delete facility #${id}?`);
+
+    if (!confirmed) return;
+
     const res = await apiRequest(`/api/facility/${id}`, "DELETE");
 
     if (res && res.message) {

@@ -6,6 +6,7 @@ using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Validators.Reservations;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace OSFRS.Backend.Services;
 
@@ -16,6 +17,7 @@ namespace OSFRS.Backend.Services;
 public class ReservationService : IReservationService
 {
     private readonly IReservationRepository _repo;
+    private readonly IFacilityRepository _facility;
     private readonly IAppLogger<ReservationService> _logger;
 
     private readonly IValidator<(CreateReservationDto dto, int userId)> _createValidator;
@@ -26,12 +28,14 @@ public class ReservationService : IReservationService
     /// Initializes a new instance of the <see cref="ReservationService"/> class.
     /// </summary>
     /// <param name="repo">Repository used for reservation persistence and querying.</param>
+    /// <param name="facility">Repository used for facility existense check.</param>
     /// <param name="logger">Logging abstraction for reservation operations.</param>
     /// <param name="createValidator">Validator for reservation creation.</param>
     /// <param name="updateValidator">Validator for reservation updates.</param>
     /// <param name="cancelValidator">Validator ensuring cancellation rules are followed.</param>
     public ReservationService(
         IReservationRepository repo,
+        IFacilityRepository facility,
         IAppLogger<ReservationService> logger,
         IValidator<(CreateReservationDto dto, int userId)> createValidator,
         IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)> updateValidator,
@@ -39,6 +43,7 @@ public class ReservationService : IReservationService
     )
     {
         _repo = repo;
+        _facility = facility;
         _logger = logger;
 
         _createValidator = createValidator;
@@ -54,13 +59,18 @@ public class ReservationService : IReservationService
     /// <returns>A collection of availability slots representing scheduled reservations.</returns>
     public async Task<IEnumerable<AvailabilitySlotDto>> GetAvailabilityCalendarAsync(int facilityId, DateTime? date = null)
     {
+        if (await _facility.GetByIdAsync(facilityId) is null)
+            throw new NotFoundException("Facility not found.");
+
         var targetDate = date ?? DateTime.UtcNow;
         var start = targetDate.Date;
         var end = start.AddDays(1);
 
         var reservations = await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
+        var activeReservations = reservations
+            .Where(r => !string.Equals(r.Status, "Cancelled", StringComparison.OrdinalIgnoreCase));
 
-        return reservations.Select(r => new AvailabilitySlotDto
+        return activeReservations.Select(r => new AvailabilitySlotDto
         {
             Id = r.Id,
             UserId = r.UserId,
@@ -136,9 +146,12 @@ public class ReservationService : IReservationService
 
         await _updateValidator.ValidateAsync((dto, reservation, isAdmin: false, userId));
 
-        reservation.StartTime = dto.StartTime;
-        reservation.EndTime = dto.EndTime;
-        reservation.Status = dto.Status ?? reservation.Status;
+        if (dto.StartTime.HasValue)
+            reservation.StartTime = dto.StartTime.Value;
+
+        if (dto.EndTime.HasValue)
+            reservation.EndTime = dto.EndTime.Value;
+
         reservation.UpdatedAt = DateTime.UtcNow;
 
         _repo.Update(reservation);
@@ -216,9 +229,15 @@ public class ReservationService : IReservationService
 
         await _updateValidator.ValidateAsync((dto, reservation, isAdmin: true, adminId));
 
-        reservation.StartTime = dto.StartTime;
-        reservation.EndTime = dto.EndTime;
-        reservation.Status = dto.Status ?? reservation.Status;
+        if (dto.StartTime.HasValue)
+            reservation.StartTime = dto.StartTime.Value;
+
+        if (dto.EndTime.HasValue)
+            reservation.EndTime = dto.EndTime.Value;
+
+        if (dto.Status is not null)
+            reservation.Status = dto.Status;
+
         reservation.UpdatedAt = DateTime.UtcNow;
 
         _repo.Update(reservation);

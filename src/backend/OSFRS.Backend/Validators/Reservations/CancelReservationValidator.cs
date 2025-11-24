@@ -22,7 +22,7 @@ public class CancelReservationValidator : BaseValidator
         Require(reservation.UserId == userId, "You do not own this reservation.");
 
         if (reservation.Status == "Cancelled")
-            Forbidden("Reservation is already cancelled.");
+            Conflict("Reservation is already cancelled.");
 
         return Task.CompletedTask;
     }

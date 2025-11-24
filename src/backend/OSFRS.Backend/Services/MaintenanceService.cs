@@ -202,6 +202,9 @@ public class MaintenanceService : IMaintenanceService
 
         foreach (var facility in allFacilities)
         {
+            if (facility.Status == "Unavailable")
+                continue;
+
             if (facilitiesUnderMaintenance.Contains(facility.Id))
             {
                 facility.Status = "UnderMaintenance";

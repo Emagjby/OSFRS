@@ -51,7 +51,7 @@ public class CreateReservationValidator : BaseValidator, IValidator<(CreateReser
             dto.StartTime < m.EndTime && dto.EndTime > m.StartTime);
 
         if (overlapsMaintenance)
-            Forbidden("Facility is under maintenance during the selected time window.");
+            Conflict("Facility is under maintenance during the selected time window.");
 
         bool available = await _reservation.IsSlotAvailableAsync(
             dto.StartTime, dto.EndTime, dto.FacilityId);

@@ -25,6 +25,7 @@
                     <a href="/microui/facility/availability-update">Update Availability</a>
                 </div>
             </div>
+
             <div class="dropdown">
                 <a class="dropbtn">Maintenance</a>
                 <div class="dropdown-content">
@@ -34,6 +35,22 @@
                     <a href="/microui/maintenance/update">Update Maintenance</a>
                     <a href="/microui/maintenance/delete">Delete Maintenance</a>
                     <a href="/microui/maintenance/sync-statuses">Sync Statuses</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <a class="dropbtn">Reservations</a>
+                <div class="dropdown-content">
+                    <a href="/microui/reservations/list">List Reservations</a>
+                    <a href="/microui/reservations/calendar">Availability Calendar</a>
+                    <a href="/microui/reservations/get">Get Reservations for Facility</a>
+                    <a href="/microui/reservations/search">Search Reservations</a>
+                    <a href="/microui/reservations/create">Create Reservation</a>
+                    <a href="/microui/reservations/update">Update Reservation (U)</a>
+                    <a href="/microui/reservations/delete">Delete Reservation</a>
+                    <a href="/microui/reservations/cancel">Cancel Reservation</a>
+                    <a href="/microui/reservations/my">My Reservation</a>
+                    <a href="/microui/reservations/update-admin">Update Reservation (A)</a>
                 </div>
             </div>
         </div>

@@ -91,11 +91,21 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     {
         var query = _dbSet.Where(r => r.FacilityId == facilityId);
 
-        if (start.HasValue)
-            query = query.Where(r => r.StartTime >= start);
+        if (start.HasValue && end.HasValue)
+        {
+            var rangeStart = start.Value;
+            var rangeEnd = end.Value;
 
-        if (end.HasValue)
-            query = query.Where(r => r.EndTime <= end);
+            query = query.Where(r => r.StartTime < rangeEnd && r.EndTime > rangeStart);
+        }
+        else
+        {
+            if (start.HasValue)
+                query = query.Where(r => r.EndTime > start.Value);
+
+            if (end.HasValue)
+                query = query.Where(r => r.StartTime < end.Value);
+        }
 
         return await query.ToListAsync();
     }

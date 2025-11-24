@@ -35,7 +35,11 @@ public class ReservationsController : ControllerBase
     [HttpGet("availability/{facilityId}")]
     public async Task<IActionResult> GetAvailabilityCalendar(int facilityId, [FromQuery] DateTime? date)
     {
-        var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, date);
+        var utcDate = date.HasValue
+            ? DateTime.SpecifyKind(date.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow.Date;
+
+        var calendar = await _service.GetAvailabilityCalendarAsync(facilityId, utcDate);
         return Ok(calendar);
     }
 

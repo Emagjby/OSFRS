@@ -53,10 +53,15 @@ async function loadMaintenance() {
 }
 
 async function deleteMaintenance(id) {
+    const confirmed = confirm(`Delete maintenance record #${id}?`);
+
+    if (!confirmed) return;
+
     const res = await apiRequest(`/api/maintenance/${id}`, "DELETE");
 
     if (res && res.message) {
-        document.getElementById("successMessage").innerHTML = `Maintenance ${id} deleted.`;
+        document.getElementById("successMessage").innerHTML =
+            `Maintenance ${id} deleted.`;
         loadMaintenance();
     }
 }

@@ -36,12 +36,12 @@ public class FacilityAvailabilityValidator : BaseValidator
         var activeMaintenance = await _repo.GetByFacilityAsync(facility.Id);
 
         bool isUnderMaintenance = activeMaintenance.Any(m =>
-            now >= m.StartTime && now <= m.EndTime
+            m.Status == "InProgress"
         );
 
         if (newAvailability && isUnderMaintenance)
         {
-            Forbidden("Facility cannot be marked Available during active maintenance.");
+            Conflict("Facility cannot be marked Available during active maintenance.");
         }
     }
 }

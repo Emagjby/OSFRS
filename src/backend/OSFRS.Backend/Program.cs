@@ -170,7 +170,7 @@ using (var scope = app.Services.CreateScope())
     jobManager.AddOrUpdate<IMaintenanceService>(
         "status-sync",
         service => service.SyncStatusesAsync(),
-        "*/5 * * * *" // every 5 minutes
+        "*/1 * * * *"
     );
 }
 

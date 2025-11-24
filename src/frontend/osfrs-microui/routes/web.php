@@ -20,4 +20,15 @@ Route::view('/microui/maintenance/update', 'microui.maintenance.update');
 Route::view('/microui/maintenance/delete', 'microui.maintenance.delete');
 Route::view('/microui/maintenance/sync-statuses', 'microui.maintenance.sync-statuses');
 
+Route::view('/microui/reservations/list', 'microui.reservations.list');
+Route::view('/microui/reservations/calendar', 'microui.reservations.calendar');
+Route::view('/microui/reservations/search', 'microui.reservations.search');
+Route::view('/microui/reservations/get', 'microui.reservations.get');
+Route::view('/microui/reservations/create', 'microui.reservations.create');
+Route::view('/microui/reservations/update', 'microui.reservations.update');
+Route::view('/microui/reservations/delete', 'microui.reservations.delete');
+Route::view('/microui/reservations/cancel', 'microui.reservations.cancel');
+Route::view('/microui/reservations/my', 'microui.reservations.my');
+Route::view('/microui/reservations/update-admin', 'microui.reservations.update-admin');
+
 Route::redirect('/', '/microui/auth/login');

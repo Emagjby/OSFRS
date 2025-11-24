@@ -67,7 +67,7 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
             // Prevent UnderMaintenance -> Available transition unless maintenance ended
             if (existing.Status == "UnderMaintenance" && dto.Status == "Available")
             {
-                throw new ConflictException("Facility cannot be marked as Available until maintenance ends.");
+                Conflict("Facility cannot be marked as Available until maintenance ends.");
             }
 
             // Prevent marking Available during active maintenance
@@ -80,7 +80,7 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
 
             if (dto.Status == "Available" && isUnderMaintenance)
             {
-                throw new ConflictException("Facility is currently under maintenance and cannot be marked Available.");
+                Conflict("Facility is currently under maintenance and cannot be marked Available.");
             }
         }
     }
