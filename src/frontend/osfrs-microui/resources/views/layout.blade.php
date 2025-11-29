@@ -9,7 +9,7 @@
     <script src="{{ asset('js/main.js ')}}"></script>
 </head>
 <body>
-    
+
     <nav>
 
         <div class="left">
@@ -53,6 +53,14 @@
                     <a href="/microui/reservations/update-admin">Update Reservation (A)</a>
                 </div>
             </div>
+
+            <div class="dropdown">
+                <a class="dropbtn">Profile</a>
+                <div class="dropdown-content">
+                    <a href="/microui/profile/view">View Profile</a>
+                    <a href="/microui/profile/update">Update Profile</a>
+                </div>
+            </div>
         </div>
 
         <div class="right">
@@ -60,7 +68,6 @@
             <a href="/microui/auth/register" class="loggedOut dropbtn">Register</a>
             <a href="#" onclick="logout()" class="loggedIn dropbtn">Logout</a>
         </div>
-        
     </nav>
 
     <p id="greeter"></p>

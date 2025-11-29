@@ -1,11 +1,11 @@
-using OSFRS.Backend.Interfaces.Logging;
-using OSFRS.Backend.Interfaces.Service;
-using OSFRS.Backend.Interfaces.Repository;
-using OSFRS.Backend.Interfaces.Validator;
-using OSFRS.Backend.Interfaces.Helper;
 using OSFRS.Backend.DTOs.Auth;
-using OSFRS.Models.Entities;
 using OSFRS.Backend.Exceptions;
+using OSFRS.Backend.Interfaces.Helper;
+using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Backend.Interfaces.Service;
+using OSFRS.Backend.Interfaces.Validator;
+using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
 
@@ -60,14 +60,11 @@ public class ProfileService : IProfileService
             Name = user.Name,
             Username = user.Username,
             Email = user.Email,
-            Role = user.Role,
-            CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt
         };
     }
 
     /// <summary>
-    /// Updates editable fields of a user's profile, including optional password changes.
+    /// Updates editable fields of a user's profile
     /// </summary>
     /// <param name="userId">The ID of the user whose profile is being modified.</param>
     /// <param name="dto">Update request containing modified fields.</param>
@@ -91,12 +88,8 @@ public class ProfileService : IProfileService
         if (dto.Email is not null)
             user.Email = dto.Email;
 
-        if (dto.Password is not null)
-            user.PasswordHash = _pass.Hash(dto.Password);
-
         user.UpdatedAt = DateTime.UtcNow;
 
-        _repo.Update(user);
         await _repo.SaveChangesAsync();
 
         _logger.LogInformation("Profile updated successfully for User {UserId}", userId);

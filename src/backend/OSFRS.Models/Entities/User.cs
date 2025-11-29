@@ -1,5 +1,5 @@
-using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace OSFRS.Models.Entities;
 
@@ -9,14 +9,17 @@ public class User
 
     [Required]
     [MaxLength(50)]
+    [JsonIgnore]
     public string Name { get; set; } = null!;
 
     [Required]
     [MaxLength(30)]
+    [JsonIgnore]
     public string Username { get; set; } = null!;
 
     [Required]
     [EmailAddress]
+    [JsonIgnore]
     public string Email { get; set; } = null!;
 
     [Required]

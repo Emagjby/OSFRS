@@ -31,4 +31,7 @@ Route::view('/microui/reservations/cancel', 'microui.reservations.cancel');
 Route::view('/microui/reservations/my', 'microui.reservations.my');
 Route::view('/microui/reservations/update-admin', 'microui.reservations.update-admin');
 
+Route::view('/microui/profile/view', 'microui.profile.view');
+Route::view('/microui/profile/update', 'microui.profile.update');
+
 Route::redirect('/', '/microui/auth/login');

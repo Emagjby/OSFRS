@@ -38,8 +38,10 @@ public class ProfileUpdateValidator : BaseValidator, IUpdateValidator<UpdatedPro
         {
             Require(!string.IsNullOrWhiteSpace(dto.Name.Trim()), "Name is required.");
             Require(dto.Name.Length <= 50, "Name cannot exceed 50 characters.");
-            Require(dto.Name.Trim().All(c => char.IsLetter(c) || c == ' '),
-                "Name can only contain letters and spaces.");
+            Require(
+                dto.Name.Trim().All(c => char.IsLetter(c) || c == ' '),
+                "Name can only contain letters and spaces."
+            );
             Require(!dto.Name.Contains("  "), "Name cannot contain multiple consecutive spaces.");
         }
 
@@ -63,12 +65,6 @@ public class ProfileUpdateValidator : BaseValidator, IUpdateValidator<UpdatedPro
             {
                 Require(!await _repo.EmailExistsAsync(dto.Email), "Email already in use.");
             }
-        }
-
-        // PASSWORD
-        if (dto.Password is not null)
-        {
-            Require(PasswordValidator.IsStrong(dto.Password), "Password is too weak.");
         }
     }
 }
