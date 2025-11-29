@@ -1,3 +1,11 @@
+function toUtcIso(dateString)
+{
+    const local = new Date(dateString);
+    return new Date(
+        local.getTime() - (local.getTimezoneOffset() * 60000)
+    ).toISOString();
+}
+
 function decodeJwtPayload(token) {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
 

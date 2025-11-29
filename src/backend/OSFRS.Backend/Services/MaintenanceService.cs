@@ -20,7 +20,10 @@ public class MaintenanceService : IMaintenanceService
     private readonly IAppLogger<MaintenanceService> _logger;
 
     private readonly IValidator<CreateMaintenanceRecordDto> _createValidator;
-    private readonly IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord> _updateValidator;
+    private readonly IUpdateValidator<
+        UpdateMaintenanceRecordDto,
+        MaintenanceRecord
+    > _updateValidator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MaintenanceService"/> class.
@@ -43,6 +46,32 @@ public class MaintenanceService : IMaintenanceService
         _logger = logger;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+    }
+
+    /// <summary>
+    /// Retrieves maintenance records using server-side filtering.
+    /// </summary>
+    /// <param name="status">
+    /// Optional maintenance status filter (e.g. <c>Scheduled</c>, <c>InProgress</c>,
+    /// <c>Completed</c>, <c>Cancelled</c>). If omitted, all statuses are included.
+    /// </param>
+    /// <param name="facilityId">
+    /// Optional facility ID to restrict results to a specific facility.
+    /// If <c>null</c>, records for all facilities are included.
+    /// </param>
+    /// <returns>
+    /// A collection of <see cref="MaintenanceRecord"/> objects matching the filter criteria.
+    /// </returns>
+    public async Task<IEnumerable<MaintenanceRecord>> GetFilteredMaintenanceAsync(
+        string? status = null,
+        int? facilityId = null
+    )
+    {
+        var records = await _repo.QueryAsync(status, facilityId);
+
+        _logger.LogInformation("Fetched {Count} maintenance records (filtered).", records.Count());
+
+        return records;
     }
 
     /// <summary>
@@ -123,7 +152,7 @@ public class MaintenanceService : IMaintenanceService
             EndTime = dto.EndTime,
             Status = dto.Status,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         await _repo.AddAsync(entity);
@@ -228,10 +257,14 @@ public class MaintenanceService : IMaintenanceService
     /// <param name="dto">Update request DTO.</param>
     /// <returns>The updated record, or null if not found.</returns>
     /// <exception cref="NotFoundException">Thrown when the record does not exist.</exception>
-    public async Task<MaintenanceRecord?> UpdateMaintenanceAsync(int id, UpdateMaintenanceRecordDto dto)
+    public async Task<MaintenanceRecord?> UpdateMaintenanceAsync(
+        int id,
+        UpdateMaintenanceRecordDto dto
+    )
     {
-        var existing = await _repo.GetByIdAsync(id)
-                        ?? throw new NotFoundException("Maintenance record not found.");
+        var existing =
+            await _repo.GetByIdAsync(id)
+            ?? throw new NotFoundException("Maintenance record not found.");
 
         await _updateValidator.ValidateAsync(dto, existing);
 
@@ -246,7 +279,8 @@ public class MaintenanceService : IMaintenanceService
 
         _logger.LogInformation(
             "Updated maintenance record {Id} for facility {FacilityId}",
-            existing.Id, existing.FacilityId
+            existing.Id,
+            existing.FacilityId
         );
 
         return existing;

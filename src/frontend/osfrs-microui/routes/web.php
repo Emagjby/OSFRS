@@ -34,4 +34,18 @@ Route::view('/microui/reservations/update-admin', 'microui.reservations.update-a
 Route::view('/microui/profile/view', 'microui.profile.view');
 Route::view('/microui/profile/update', 'microui.profile.update');
 
+Route::view('/microui/statistics/events', 'microui.statistics.events');
+Route::view('/microui/statistics/aggregate/daily', 'microui.statistics.aggregate.daily');
+Route::view('/microui/statistics/aggregate/monthly', 'microui.statistics.aggregate.monthly');
+Route::view('/microui/statistics/aggregate/run', 'microui.statistics.aggregate.run');
+Route::view('/microui/statistics/reports/daily', 'microui.statistics.reports.daily');
+Route::view('/microui/statistics/reports/monthly', 'microui.statistics.reports.monthly');
+Route::view('/microui/statistics/export/csv', 'microui.statistics.export.csv');
+Route::view('/microui/statistics/export/pdf', 'microui.statistics.export.pdf');
+Route::view('/microui/statistics/analytics/trends/daily', 'microui.statistics.analytics.trends.daily');
+Route::view('/microui/statistics/analytics/trends/monthly', 'microui.statistics.analytics.trends.monthly');
+Route::view('/microui/statistics/analytics/peaks', 'microui.statistics.analytics.peaks');
+Route::view('/microui/statistics/analytics/anomalies', 'microui.statistics.analytics.anomalies');
+Route::view('/microui/statistics/analytics/visualization', 'microui.statistics.analytics.visualization');
+
 Route::redirect('/', '/microui/auth/login');

@@ -27,7 +27,9 @@
 window.onload = loadMaintenance;
 
 async function loadMaintenance() {
-    const data = await apiRequest("/api/maintenance/upcoming", "GET");
+    const inProgress = await apiRequest("/api/maintenance/all?status=InProgress", "GET");
+    const scheduled = await apiRequest("/api/maintenance/all?status=Scheduled", "GET");
+    const data = [...inProgress, ...scheduled];
     if (!data) return;
 
     const tbody = document.querySelector("#maintenanceTable tbody");

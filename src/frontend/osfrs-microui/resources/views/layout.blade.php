@@ -61,6 +61,25 @@
                     <a href="/microui/profile/update">Update Profile</a>
                 </div>
             </div>
+
+            <div class="dropdown">
+                <a class="dropbtn">Statistics</a>
+                <div class="dropdown-content">
+                    <a href="/microui/statistics/events">Usage Events</a>
+                    <a href="/microui/statistics/aggregate/daily">Daily Aggregate</a>
+                    <a href="/microui/statistics/aggregate/monthly">Monthly Aggregate</a>
+                    <a href="/microui/statistics/aggregate/run">Run Aggregation</a>
+                    <a href="/microui/statistics/reports/daily">Daily Report</a>
+                    <a href="/microui/statistics/reports/monthly">Monthly Report</a>
+                    <a href="/microui/statistics/export/csv">Export CSV</a>
+                    <a href="/microui/statistics/export/pdf">Export PDF</a>
+                    <a href="/microui/statistics/analytics/trends/daily">Daily Trends</a>
+                    <a href="/microui/statistics/analytics/trends/monthly">Monthly Trends</a>
+                    <a href="/microui/statistics/analytics/peaks">Peak Usage</a>
+                    <a href="/microui/statistics/analytics/anomalies">Anomaly Detection</a>
+                    <a href="/microui/statistics/analytics/visualization">Visualization Data</a>
+                </div>
+            </div>
         </div>
 
         <div class="right">

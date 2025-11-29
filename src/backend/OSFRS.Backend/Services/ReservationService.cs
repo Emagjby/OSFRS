@@ -1,12 +1,11 @@
-using OSFRS.Backend.Interfaces.Logging;
-using OSFRS.Models.Entities;
-using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.DTOs.Reservations;
+using OSFRS.Backend.Exceptions;
+using OSFRS.Backend.Interfaces.Logging;
+using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Interfaces.Validator;
-using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Validators.Reservations;
-using Microsoft.AspNetCore.Http.HttpResults;
+using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Services;
 
@@ -21,7 +20,12 @@ public class ReservationService : IReservationService
     private readonly IAppLogger<ReservationService> _logger;
 
     private readonly IValidator<(CreateReservationDto dto, int userId)> _createValidator;
-    private readonly IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)> _updateValidator;
+    private readonly IValidator<(
+        UpdateReservationDto dto,
+        Reservation existing,
+        bool isAdmin,
+        int userId
+    )> _updateValidator;
     private readonly CancelReservationValidator _cancelValidator;
 
     /// <summary>
@@ -38,7 +42,12 @@ public class ReservationService : IReservationService
         IFacilityRepository facility,
         IAppLogger<ReservationService> logger,
         IValidator<(CreateReservationDto dto, int userId)> createValidator,
-        IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)> updateValidator,
+        IValidator<(
+            UpdateReservationDto dto,
+            Reservation existing,
+            bool isAdmin,
+            int userId
+        )> updateValidator,
         CancelReservationValidator cancelValidator
     )
     {
@@ -57,7 +66,10 @@ public class ReservationService : IReservationService
     /// <param name="facilityId">The facility whose availability is requested.</param>
     /// <param name="date">The target date. Defaults to today.</param>
     /// <returns>A collection of availability slots representing scheduled reservations.</returns>
-    public async Task<IEnumerable<AvailabilitySlotDto>> GetAvailabilityCalendarAsync(int facilityId, DateTime? date = null)
+    public async Task<IEnumerable<AvailabilitySlotDto>> GetAvailabilityCalendarAsync(
+        int facilityId,
+        DateTime? date = null
+    )
     {
         if (await _facility.GetByIdAsync(facilityId) is null)
             throw new NotFoundException("Facility not found.");
@@ -67,8 +79,9 @@ public class ReservationService : IReservationService
         var end = start.AddDays(1);
 
         var reservations = await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
-        var activeReservations = reservations
-            .Where(r => !string.Equals(r.Status, "Cancelled", StringComparison.OrdinalIgnoreCase));
+        var activeReservations = reservations.Where(r =>
+            !string.Equals(r.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)
+        );
 
         return activeReservations.Select(r => new AvailabilitySlotDto
         {
@@ -77,15 +90,18 @@ public class ReservationService : IReservationService
             FacilityId = r.FacilityId,
             StartTime = r.StartTime,
             EndTime = r.EndTime,
-            Status = r.Status
+            Status = r.Status,
         });
     }
 
     /// <summary>
     /// Retrieves all reservations for a specific facility within an optional time range.
     /// </summary>
-    public async Task<IEnumerable<Reservation>> GetReservationsAsync(int facilityId, DateTime? start = null, DateTime? end = null)
-        => await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
+    public async Task<IEnumerable<Reservation>> GetReservationsAsync(
+        int facilityId,
+        DateTime? start = null,
+        DateTime? end = null
+    ) => await _repo.GetByFacilityAndRangeAsync(facilityId, start, end);
 
     /// <summary>
     /// Performs a flexible search across reservations using optional filters.
@@ -107,7 +123,11 @@ public class ReservationService : IReservationService
     {
         _logger.LogInformation(
             "User {UserId} creating reservation for facility {FacilityId} from {Start} to {End}",
-            userId, dto.FacilityId, dto.StartTime, dto.EndTime);
+            userId,
+            dto.FacilityId,
+            dto.StartTime,
+            dto.EndTime
+        );
 
         await _createValidator.ValidateAsync((dto, userId));
 
@@ -119,7 +139,7 @@ public class ReservationService : IReservationService
             EndTime = dto.EndTime,
             Status = "Pending",
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         await _repo.AddAsync(reservation);
@@ -127,7 +147,9 @@ public class ReservationService : IReservationService
 
         _logger.LogInformation(
             "Reservation {ReservationId} created for user {UserId}",
-            reservation.Id, userId);
+            reservation.Id,
+            userId
+        );
 
         return reservation;
     }
@@ -135,14 +157,16 @@ public class ReservationService : IReservationService
     /// <summary>
     /// Updates an existing reservation for the specified user.
     /// </summary>
-    public async Task<Reservation> UpdateReservationAsync(int id, UpdateReservationDto dto, int userId)
+    public async Task<Reservation> UpdateReservationAsync(
+        int id,
+        UpdateReservationDto dto,
+        int userId
+    )
     {
-        var reservation = await _repo.GetByIdAsync(id)
-                            ?? throw new NotFoundException("Reservation not found.");
+        var reservation =
+            await _repo.GetByIdAsync(id) ?? throw new NotFoundException("Reservation not found.");
 
-        _logger.LogInformation(
-            "User {UserId} updating reservation {ReservationId}",
-            userId, id);
+        _logger.LogInformation("User {UserId} updating reservation {ReservationId}", userId, id);
 
         await _updateValidator.ValidateAsync((dto, reservation, isAdmin: false, userId));
 
@@ -157,9 +181,7 @@ public class ReservationService : IReservationService
         _repo.Update(reservation);
         await _repo.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Reservation {ReservationId} updated by user {UserId}",
-            id, userId);
+        _logger.LogInformation("Reservation {ReservationId} updated by user {UserId}", id, userId);
 
         return reservation;
     }
@@ -169,12 +191,14 @@ public class ReservationService : IReservationService
     /// </summary>
     public async Task CancelReservationAsync(int id, int userId)
     {
-        var reservation = await _repo.GetByIdAsync(id)
-                            ?? throw new NotFoundException("Reservation not found.");
+        var reservation =
+            await _repo.GetByIdAsync(id) ?? throw new NotFoundException("Reservation not found.");
 
         _logger.LogInformation(
             "User {UserId} requested cancellation for reservation {ReservationId}",
-            userId, id);
+            userId,
+            id
+        );
 
         await _cancelValidator.ValidateAsync(reservation, userId);
 
@@ -186,46 +210,46 @@ public class ReservationService : IReservationService
 
         _logger.LogInformation(
             "Reservation {ReservationId} cancelled by user {UserId}",
-            id, userId);
+            id,
+            userId
+        );
     }
 
     /// <summary>
     /// Retrieves all reservations in the system.
     /// </summary>
-    public async Task<IEnumerable<Reservation>> GetAllReservationsAsync()
-        => await _repo.GetAllReadonlyAsync();
+    public async Task<IEnumerable<Reservation>> GetAllReservationsAsync() =>
+        await _repo.GetAllReadonlyAsync();
 
     /// <summary>
     /// Deletes a reservation as an administrator.
     /// </summary>
     public async Task DeleteReservationAsync(int id, int adminId)
     {
-        _logger.LogInformation(
-            "Admin {AdminId} deleting reservation {ReservationId}",
-            adminId, id);
+        _logger.LogInformation("Admin {AdminId} deleting reservation {ReservationId}", adminId, id);
 
-        var reservation = await _repo.GetByIdAsync(id)
-                            ?? throw new NotFoundException("Reservation not found.");
+        var reservation =
+            await _repo.GetByIdAsync(id) ?? throw new NotFoundException("Reservation not found.");
 
         _repo.Remove(reservation);
         await _repo.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Admin {AdminId} deleted reservation {ReservationId}",
-            adminId, id);
+        _logger.LogInformation("Admin {AdminId} deleted reservation {ReservationId}", adminId, id);
     }
 
     /// <summary>
     /// Updates a reservation with administrative privileges.
     /// </summary>
-    public async Task<Reservation> AdminUpdateReservationAsync(int id, UpdateReservationDto dto, int adminId)
+    public async Task<Reservation> AdminUpdateReservationAsync(
+        int id,
+        UpdateReservationDto dto,
+        int adminId
+    )
     {
-        var reservation = await _repo.GetByIdAsync(id)
-                           ?? throw new NotFoundException("Reservation not found.");
+        var reservation =
+            await _repo.GetByIdAsync(id) ?? throw new NotFoundException("Reservation not found.");
 
-        _logger.LogInformation(
-            "Admin {AdminId} updating reservation {ReservationId}",
-            adminId, id);
+        _logger.LogInformation("Admin {AdminId} updating reservation {ReservationId}", adminId, id);
 
         await _updateValidator.ValidateAsync((dto, reservation, isAdmin: true, adminId));
 
@@ -243,9 +267,7 @@ public class ReservationService : IReservationService
         _repo.Update(reservation);
         await _repo.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Admin {AdminId} updated reservation {ReservationId}",
-            adminId, id);
+        _logger.LogInformation("Admin {AdminId} updated reservation {ReservationId}", adminId, id);
 
         return reservation;
     }
