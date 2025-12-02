@@ -19,7 +19,7 @@ public static class AnomalyDetector
     /// Returns an empty list if input contains fewer than 3 values
     /// or if the standard deviation is zero.
     /// </returns>
-    public static List<int> DetectByZScore(IEnumerable<int> values, double threshold = 3.0)
+    public static List<int> DetectByZScore(IEnumerable<int> values, double threshold = 3)
     {
         var list = values.ToList();
         if (list.Count < 3) return new();
