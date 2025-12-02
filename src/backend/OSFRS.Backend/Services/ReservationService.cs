@@ -26,7 +26,7 @@ public class ReservationService : IReservationService
         bool isAdmin,
         int userId
     )> _updateValidator;
-    private readonly CancelReservationValidator _cancelValidator;
+    private readonly IValidator<(Reservation reservation, int userId)> _cancelValidator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ReservationService"/> class.
@@ -48,7 +48,7 @@ public class ReservationService : IReservationService
             bool isAdmin,
             int userId
         )> updateValidator,
-        CancelReservationValidator cancelValidator
+        IValidator<(Reservation reservation, int userId)> cancelValidator
     )
     {
         _repo = repo;
@@ -200,7 +200,7 @@ public class ReservationService : IReservationService
             id
         );
 
-        await _cancelValidator.ValidateAsync(reservation, userId);
+        await _cancelValidator.ValidateAsync((reservation, userId));
 
         reservation.Status = "Cancelled";
         reservation.UpdatedAt = DateTime.UtcNow;

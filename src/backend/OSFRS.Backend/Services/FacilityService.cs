@@ -23,7 +23,7 @@ public class FacilityService
 
     private readonly IValidator<CreateFacilityDto> _createValidator;
     private readonly IUpdateValidator<UpdateFacilityDto, Facility> _updateValidator;
-    private readonly FacilityAvailabilityValidator _availabilityValidator;
+    private readonly IValidator<(Facility facility, bool newAvailability)> _availabilityValidator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FacilityService"/> class.
@@ -38,7 +38,7 @@ public class FacilityService
         IAppLogger<FacilityService> logger,
         IValidator<CreateFacilityDto> createValidator,
         IUpdateValidator<UpdateFacilityDto, Facility> updateValidator,
-        FacilityAvailabilityValidator availabilityValidator
+        IValidator<(Facility facility, bool newAvailability)> availabilityValidator
     ) : base(
         repo,
         MapToDto,
@@ -147,7 +147,7 @@ public class FacilityService
         if (existing is null)
             throw new NotFoundException("Facility not found.");
 
-        await _availabilityValidator.ValidateAsync(existing, isAvailable);
+        await _availabilityValidator.ValidateAsync((existing, isAvailable));
 
         await _repo.UpdateAvailabilityAsync(facilityId, isAvailable);
         await _repo.SaveChangesAsync();

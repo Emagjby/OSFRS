@@ -50,9 +50,6 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
 }
 
 // Dependency Injection
-builder.Services.AddScoped<FacilityAvailabilityValidator>();
-builder.Services.AddScoped<CancelReservationValidator>();
-builder.Services.AddScoped<UsageQueryValidator>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -75,6 +72,9 @@ builder.Services.AddScoped<IValidator<UserRegistrationDto>, UserRegistrationVali
 builder.Services.AddScoped<IValidator<CreateFacilityDto>, CreateFacilityValidator>();
 builder.Services.AddScoped<IValidator<(CreateReservationDto, int)>, CreateReservationValidator>();
 builder.Services.AddScoped<IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)>, UpdateReservationValidator>();
+builder.Services.AddScoped<IValidator<(Reservation reservation, int userId)>, CancelReservationValidator>();
+builder.Services.AddScoped<IValidator<(Facility facility, bool isAvailable)>, FacilityAvailabilityValidator>();
+builder.Services.AddScoped<IValidator<(string? eventType, int? userId, int? facilityId, DateTime? from, DateTime? to)>, UsageQueryValidator>();
 builder.Services.AddScoped<IValidator<CreateMaintenanceRecordDto>, CreateMaintenanceValidator>();
 builder.Services.AddScoped<IUpdateValidator<UpdatedProfileDto, User>, ProfileUpdateValidator>();
 builder.Services.AddScoped<IUpdateValidator<UpdateFacilityDto, Facility>, UpdateFacilityValidator>();
