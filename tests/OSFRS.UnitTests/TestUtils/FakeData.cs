@@ -3,7 +3,6 @@ using OSFRS.Backend.DTOs.Analytics;
 using OSFRS.Backend.DTOs.Auth;
 using OSFRS.Backend.DTOs.Facilities;
 using OSFRS.Backend.DTOs.Maintenance;
-using OSFRS.Backend.DTOs.Reports;
 using OSFRS.Backend.DTOs.Reservations;
 using OSFRS.Models.Entities;
 
@@ -49,7 +48,11 @@ public static class FakeData
             .RuleFor(r => r.EndTime, f => DateTime.UtcNow.AddHours(2));
 
     public static Faker<CreateFacilityDto> CreateFacilityDto() =>
-        new Faker<CreateFacilityDto>().RuleFor(x => x.Name, f => f.Company.CompanyName());
+        new Faker<CreateFacilityDto>()
+            .RuleFor(f => f.Name, _ => "Sports Hall")
+            .RuleFor(f => f.Type, _ => "Gym")
+            .RuleFor(f => f.Capacity, _ => 20)
+            .RuleFor(f => f.Status, _ => "Available");
 
     public static Faker<CreateMaintenanceRecordDto> CreateMaintenanceDto() =>
         new Faker<CreateMaintenanceRecordDto>()
@@ -194,4 +197,17 @@ public static class FakeData
             .RuleFor(x => x.FacilityId, f => f.Random.Int(1, 10))
             .RuleFor(x => x.Timestamp, f => f.Date.Recent().ToUniversalTime())
             .RuleFor(x => x.Metadata, _ => new());
+
+    public static Faker<UserRegistrationDto> UserRegistrationDto() =>
+        new Faker<UserRegistrationDto>()
+            .RuleFor(x => x.Name, f => f.Name.FirstName())
+            .RuleFor(x => x.Username, f => "gencho_" + f.Random.Int(1, 9999))
+            .RuleFor(x => x.Email, f => f.Internet.Email())
+            .RuleFor(x => x.Password, f => "StrongPassword123!");
+
+    public static string WeakPassword() => "abc123";
+
+    public static string InvalidEmail() => "not-an-email";
+
+    public static string InvalidUsername() => "??bad name!!";
 }

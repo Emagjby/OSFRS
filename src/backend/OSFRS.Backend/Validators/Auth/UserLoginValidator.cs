@@ -1,5 +1,4 @@
 using OSFRS.Backend.DTOs.Auth;
-using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Backend.Validators.Base;
 using OSFRS.Backend.Validators.Common;
