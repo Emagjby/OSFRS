@@ -44,20 +44,6 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     }
 
     /// <summary>
-    /// Retrieves a reservation by its identifier, including the associated user.
-    /// </summary>
-    /// <param name="id">The reservation identifier.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The reservation, or null if not found.</returns>
-    public override async Task<Reservation?> GetByIdAsync(
-        int id,
-        CancellationToken cancellationToken = default
-    )
-    {
-        return await _dbSet.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
-    }
-
-    /// <summary>
     /// Determines whether a reservation slot is free for the specified time range and facility.
     /// </summary>
     /// <param name="start">Start time of the reservation.</param>
@@ -178,14 +164,12 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
         int excludeReservationId
     )
     {
-        var conflictExists = await _dbSet.AnyAsync(reservation =>
-            reservation.FacilityId == facilityId
-            && reservation.Id != excludeReservationId
-            && (
-                (start >= reservation.StartTime && start < reservation.EndTime)
-                || (end > reservation.StartTime && end <= reservation.EndTime)
-                || (start <= reservation.StartTime && end >= reservation.EndTime)
-            )
+        var conflictExists = await _dbSet.AnyAsync(r =>
+            r.FacilityId == facilityId &&
+            r.Id != excludeReservationId &&
+            r.Status != "Cancelled" &&        // <— REQUIRED
+            r.StartTime < end &&
+            r.EndTime > start
         );
 
         if (conflictExists)

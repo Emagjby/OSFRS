@@ -24,6 +24,8 @@ public class CancelReservationValidator : BaseValidator, IValidator<(Reservation
 
         Require(reservation.UserId == userId, "You do not own this reservation.");
 
+        EnsureNotPast(reservation.StartTime, "Cannot cancel a reservation in the past.");
+
         if (reservation.Status == "Cancelled")
             Conflict("Reservation is already cancelled.");
 
