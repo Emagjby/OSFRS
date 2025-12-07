@@ -21,6 +21,7 @@ jobs:
 
       - name: Set environment variables
         run: |
+          echo "OSFRS_DB_CONN: "DataSource=:memory:"" >> $GITHUB_ENV
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
           echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}" >> $GITHUB_ENV
           echo "JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}" >> $GITHUB_ENV
