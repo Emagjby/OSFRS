@@ -43,6 +43,14 @@ public class SecurityWebAppFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            var hangfireDescriptors = services
+            .Where(d => d.ServiceType.FullName != null &&
+                        d.ServiceType.FullName.Contains("Hangfire"))
+            .ToList();
+
+            foreach (var d in hangfireDescriptors)
+                services.Remove(d);
+
             foreach (
                 var d in services
                     .Where(s => s.ServiceType == typeof(JwtValidationOverride))

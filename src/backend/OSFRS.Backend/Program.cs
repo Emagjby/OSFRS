@@ -85,33 +85,8 @@ builder.Services.AddScoped<IUpdateValidator<UpdateMaintenanceRecordDto, Maintena
 
 builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
-// // Hangfire setup
-// builder.Services.AddHangfire((sp, config) =>
-// {
-//     config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-//           .UseSimpleAssemblyNameTypeSerializer()
-//           .UseRecommendedSerializerSettings()
-//           .UsePostgreSqlStorage(options =>
-//           {
-//               options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
-//           });
-// });
-
-// // Hangfire server
-// builder.Services.AddHangfireServer();
-
 // Hangfire setup
-if (builder.Environment.IsEnvironment("Test"))
-{
-    builder.Services.AddHangfire((sp, config) =>
-    {
-        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-              .UseSimpleAssemblyNameTypeSerializer()
-              .UseRecommendedSerializerSettings()
-              .UseMemoryStorage();
-    });
-}
-else
+if (!builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddHangfire((sp, config) =>
     {
@@ -120,13 +95,11 @@ else
               .UseRecommendedSerializerSettings()
               .UsePostgreSqlStorage(options =>
               {
-                  options.UseNpgsqlConnection(
-                      Environment.GetEnvironmentVariable("OSFRS_DB_CONN")
-                      ?? throw new Exception("OSFRS_DB_CONN missing")
-                  );
+                  options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
               });
     });
 
+    // Hangfire server
     builder.Services.AddHangfireServer();
 }
 
@@ -180,21 +153,24 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Hangfire jobs
-using (var scope = app.Services.CreateScope())
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var jobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    using (var scope = app.Services.CreateScope())
+    {
+        var jobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    jobManager.AddOrUpdate<IUsageService>(
-        "daily-usage-aggregation",
-        service => service.AggregateAsync(),
-        "55 23 * * *"
-    );
+        jobManager.AddOrUpdate<IUsageService>(
+            "daily-usage-aggregation",
+            service => service.AggregateAsync(),
+            "55 23 * * *"
+        );
 
-    jobManager.AddOrUpdate<IMaintenanceService>(
-        "status-sync",
-        service => service.SyncStatusesAsync(),
-        "*/1 * * * *"
-    );
+        jobManager.AddOrUpdate<IMaintenanceService>(
+            "status-sync",
+            service => service.SyncStatusesAsync(),
+            "*/1 * * * *"
+        );
+    }
 }
 
 app.UseRouting();
