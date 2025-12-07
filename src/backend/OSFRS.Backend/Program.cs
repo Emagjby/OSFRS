@@ -9,6 +9,7 @@ using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Hangfire.MemoryStorage;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Interfaces.Helper;
@@ -84,20 +85,50 @@ builder.Services.AddScoped<IUpdateValidator<UpdateMaintenanceRecordDto, Maintena
 
 builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
-// Hangfire setup
-builder.Services.AddHangfire((sp, config) =>
-{
-    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-          .UseSimpleAssemblyNameTypeSerializer()
-          .UseRecommendedSerializerSettings()
-          .UsePostgreSqlStorage(options =>
-          {
-              options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
-          });
-});
+// // Hangfire setup
+// builder.Services.AddHangfire((sp, config) =>
+// {
+//     config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+//           .UseSimpleAssemblyNameTypeSerializer()
+//           .UseRecommendedSerializerSettings()
+//           .UsePostgreSqlStorage(options =>
+//           {
+//               options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
+//           });
+// });
 
-// Hangfire server
-builder.Services.AddHangfireServer();
+// // Hangfire server
+// builder.Services.AddHangfireServer();
+
+// Hangfire setup
+if (builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddHangfire((sp, config) =>
+    {
+        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+              .UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UseMemoryStorage();
+    });
+}
+else
+{
+    builder.Services.AddHangfire((sp, config) =>
+    {
+        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+              .UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UsePostgreSqlStorage(options =>
+              {
+                  options.UseNpgsqlConnection(
+                      Environment.GetEnvironmentVariable("OSFRS_DB_CONN")
+                      ?? throw new Exception("OSFRS_DB_CONN missing")
+                  );
+              });
+    });
+
+    builder.Services.AddHangfireServer();
+}
 
 // Controllers
 builder.Services.AddControllers();
