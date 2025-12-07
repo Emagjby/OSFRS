@@ -1,0 +1,48 @@
+name: OSFRS CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [alpha-v3]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore src/backend/OSFRS.sln
+
+      - name: Build
+        run: dotnet build src/backend/OSFRS.sln --configuration Release --no-restore
+
+      - name: Run Tests
+        run: |
+          dotnet test src/backend/OSFRS.sln \
+            --configuration Release \
+            --no-build \
+            --logger "trx;LogFileName=test_results.trx" \
+            /p:CollectCoverage=true \
+            /p:CoverletOutput=coverage/ \
+            /p:CoverletOutputFormat=cobertura
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/test_results.trx"
+
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: "**/coverage/"
