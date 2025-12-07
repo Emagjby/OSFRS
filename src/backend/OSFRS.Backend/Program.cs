@@ -4,9 +4,7 @@ using OSFRS.Backend.Services;
 using OSFRS.Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
-using System.Text;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
 using Hangfire;
@@ -29,6 +27,7 @@ using OSFRS.Backend.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using Sprache;
+using Microsoft.Extensions.Options;
 
 Env.Load();
 
@@ -39,6 +38,7 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
+// DB configuration (skip for tests)
 if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
 {
     var connString = Environment.GetEnvironmentVariable("OSFRS_DB_CONN");
@@ -67,6 +67,8 @@ builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
+// Validators
 builder.Services.AddScoped<IValidator<LoginRequestDto>, UserLoginValidator>();
 builder.Services.AddScoped<IValidator<UserRegistrationDto>, UserRegistrationValidator>();
 builder.Services.AddScoped<IValidator<CreateFacilityDto>, CreateFacilityValidator>();
@@ -100,23 +102,13 @@ builder.Services.AddHangfireServer();
 // Controllers
 builder.Services.AddControllers();
 
-// JWT Authentication
+//  JWT Override Hook for Security Tests
+builder.Services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
+builder.Services.AddSingleton<IConfigureNamedOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
-            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET")!)
-            )
-        };
-    });
+    .AddJwtBearer();
+
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -131,6 +123,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -141,22 +134,21 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName);
 });
 
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMicroUI", policy =>
     {
-        policy.WithOrigins(
-            "http://127.0.0.1:8000",
-            "http://localhost:8000"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials();
+        policy.WithOrigins("http://127.0.0.1:8000", "http://localhost:8000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
+// Hangfire jobs
 using (var scope = app.Services.CreateScope())
 {
     var jobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
@@ -195,14 +187,14 @@ if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
 
 app.UseCors("AllowMicroUI");
 
-// Add JWT auth middleware
+// JWT Middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map controllers
+// Controllers
 app.MapControllers();
 
-// Debug
+// Debug endpoint
 app.MapGet("/health", () => "API is running... (v2)");
 
 app.Run();

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 namespace OSFRS.Backend.Middleware;
 
