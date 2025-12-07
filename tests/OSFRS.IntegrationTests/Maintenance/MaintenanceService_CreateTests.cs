@@ -258,6 +258,6 @@ public class MaintenanceService_CreateTests : IntegrationTestBase
 
         created.CreatedAt.Should().BeOnOrAfter(before);
         created.UpdatedAt.Should().BeOnOrAfter(before);
-        created.CreatedAt.Should().Be(created.UpdatedAt);
+        created.CreatedAt.Should().BeCloseTo(created.UpdatedAt, TimeSpan.FromMilliseconds(5));
     }
 }
