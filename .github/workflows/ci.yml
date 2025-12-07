@@ -19,6 +19,13 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      - name: Set environment variables
+        run: |
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+          echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}" >> $GITHUB_ENV
+          echo "JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}" >> $GITHUB_ENV
+          echo "JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY_MINUTES }}" >> $GITHUB_ENV
+
       - name: Restore
         run: dotnet restore src/backend/OSFRS.sln
 
