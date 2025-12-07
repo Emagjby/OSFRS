@@ -40,9 +40,9 @@ public class BaseService<TEntity, TDto> : IBaseService<TEntity, TDto>
     /// </summary>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>A collection of mapped DTOs.</returns>
-    public virtual async Task<IEnumerable<TDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public virtual async Task<IEnumerable<TDto>> GetAllReadonlyAsync(CancellationToken cancellationToken = default)
     {
-        var entities = await _repo.GetAllAsync(cancellationToken);
+        var entities = await _repo.GetAllReadonlyAsync(cancellationToken);
         return entities.Select(_mapToDto);
     }
 

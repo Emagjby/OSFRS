@@ -10,6 +10,25 @@ namespace OSFRS.Backend.Interfaces.Service;
 public interface IMaintenanceService
 {
     /// <summary>
+    /// Retrieves maintenance records using optional filtering by status and/or facility.
+    /// </summary>
+    /// <param name="status">
+    /// Optional maintenance status filter (e.g. <c>Scheduled</c>, <c>InProgress</c>,
+    /// <c>Completed</c>, <c>Cancelled</c>). If omitted, all statuses are included.
+    /// </param>
+    /// <param name="facilityId">
+    /// Optional facility ID to limit results. If <c>null</c>, records for all facilities
+    /// are returned.
+    /// </param>
+    /// <returns>
+    /// A collection of <see cref="MaintenanceRecord"/> instances that match the filters.
+    /// </returns>
+    Task<IEnumerable<MaintenanceRecord>> GetFilteredMaintenanceAsync(
+        string? status = null,
+        int? facilityId = null
+    );
+
+    /// <summary>
     /// Schedules a new maintenance record for a facility.
     /// </summary>
     /// <param name="dto">The maintenance record details to create.</param>
@@ -55,8 +74,7 @@ public interface IMaintenanceService
     Task<IEnumerable<MaintenanceRecord>> GetUpcomingMaintenanceAsync();
 
     /// <summary>
-    /// Synchronizes facility statuses based on active maintenance windows.
-    /// Marks facilities as UnderMaintenance or Available accordingly.
+    /// Synchronizes maintenance records and facility availability based on current time.
     /// </summary>
-    Task SyncFacilityStatusesAsync();
+    Task SyncStatusesAsync();
 }

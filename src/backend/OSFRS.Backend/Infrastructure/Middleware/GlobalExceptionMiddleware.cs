@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 namespace OSFRS.Backend.Middleware;
 
@@ -71,7 +72,7 @@ public class GlobalExceptionMiddleware
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
         };
 
-        _logger.LogError(ex, "Exception caught by global handler: {Message}", ex.Message);
+        _logger.LogError("Exception caught by global handler: {Message}", ex.Message);
 
         ctx.Response.ContentType = "application/json";
         ctx.Response.StatusCode = (int)status;

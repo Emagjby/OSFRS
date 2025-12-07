@@ -94,15 +94,29 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
     }
 
     /// <summary>
-    /// Retrieves all records of this entity type.
+    /// Retrieves all entities of this type without enabling change tracking.
     /// </summary>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A read-only list of all entities.</returns>
-    public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>
+    /// A read-only list of entities optimized for queries where updates are not required.
+    /// </returns>
+    public virtual async Task<IReadOnlyList<TEntity>> GetAllReadonlyAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Getting all {Entity} records", _entityName);
 
         return await _dbSet.AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Retrieves all entities of this type with change tracking enabled.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A list of tracked entities suitable for update operations.</returns>
+    public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting all {Entity} records", _entityName);
+
+        return await _dbSet.ToListAsync(cancellationToken);
     }
 
     /// <summary>

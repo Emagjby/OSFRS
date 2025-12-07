@@ -6,16 +6,16 @@ namespace OSFRS.Backend.DTOs.Reservations;
 public record UpdateReservationDto
 {
     /// <summary>
-    /// Updated start time for the reservation (UTC).
-    /// Must be earlier than <see cref="EndTime"/>.
+    /// Optional updated start time for the reservation (UTC).
+    /// Must be earlier than <see cref="EndTime"/> when provided.
     /// </summary>
-    public DateTime StartTime { get; init; }
+    public DateTime? StartTime { get; init; }
 
     /// <summary>
-    /// Updated end time for the reservation (UTC).
-    /// Must be later than <see cref="StartTime"/>.
+    /// Optional updated end time for the reservation (UTC).
+    /// Must be later than <see cref="StartTime"/> when provided.
     /// </summary>
-    public DateTime EndTime { get; init; }
+    public DateTime? EndTime { get; init; }
 
     /// <summary>
     /// Optional updated status for the reservation.

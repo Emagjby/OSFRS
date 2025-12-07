@@ -1,4 +1,5 @@
 using OSFRS.Backend.DTOs.Facilities;
+using OSFRS.Backend.Exceptions;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Backend.Validators.Base;
@@ -44,11 +45,13 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
         if (dto.Name is not null)
         {
             Require(!string.IsNullOrWhiteSpace(dto.Name), "Name cannot be empty.");
+            Require(dto.Name.Length <= 100, "Name cannot exceed 100 characters.");
         }
 
         // TYPE (future rules)
-        // if (dto.Type is not null)
-        //     Require(AllowedTypes.Contains(dto.Type), $"Invalid facility type '{dto.Type}'.");
+        // Require(AllowedTypes.Contains(dto.Type), $"Invalid facility type '{dto.Type}'.");
+        if (dto.Type is not null)
+            Require(dto.Type.Length <= 50, "Type cannot exceed 50 characters.");
 
         // CAPACITY
         if (dto.Capacity is not null)
@@ -64,7 +67,7 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
             // Prevent UnderMaintenance -> Available transition unless maintenance ended
             if (existing.Status == "UnderMaintenance" && dto.Status == "Available")
             {
-                Forbidden("Facility cannot be marked as Available until maintenance ends.");
+                Conflict("Facility cannot be marked as Available until maintenance ends.");
             }
 
             // Prevent marking Available during active maintenance
@@ -72,12 +75,12 @@ public class UpdateFacilityValidator : BaseValidator, IUpdateValidator<UpdateFac
             var activeMaintenance = await _repo.GetByFacilityAsync(existing.Id);
 
             bool isUnderMaintenance = activeMaintenance.Any(m =>
-                now >= m.StartTime && now <= m.EndTime
+                m.Status == "InProgress"
             );
 
             if (dto.Status == "Available" && isUnderMaintenance)
             {
-                Forbidden("Facility is currently under maintenance and cannot be marked Available.");
+                Conflict("Facility is currently under maintenance and cannot be marked Available.");
             }
         }
     }

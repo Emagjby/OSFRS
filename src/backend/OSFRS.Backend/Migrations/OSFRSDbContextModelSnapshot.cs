@@ -112,9 +112,6 @@ namespace OSFRS.Backend.Migrations
                     b.Property<int>("FacilityId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("FacilityId1")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -129,8 +126,6 @@ namespace OSFRS.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FacilityId");
-
-                    b.HasIndex("FacilityId1");
 
                     b.ToTable("MaintenanceRecords");
                 });
@@ -182,9 +177,6 @@ namespace OSFRS.Backend.Migrations
                     b.Property<int>("FacilityId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("FacilityId1")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -202,8 +194,6 @@ namespace OSFRS.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FacilityId");
-
-                    b.HasIndex("FacilityId1");
 
                     b.HasIndex("UserId");
 
@@ -294,14 +284,10 @@ namespace OSFRS.Backend.Migrations
             modelBuilder.Entity("OSFRS.Models.Entities.MaintenanceRecord", b =>
                 {
                     b.HasOne("OSFRS.Models.Entities.Facility", "Facility")
-                        .WithMany()
+                        .WithMany("MaintenanceRecords")
                         .HasForeignKey("FacilityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OSFRS.Models.Entities.Facility", null)
-                        .WithMany("MaintenanceRecords")
-                        .HasForeignKey("FacilityId1");
 
                     b.Navigation("Facility");
                 });
@@ -309,14 +295,10 @@ namespace OSFRS.Backend.Migrations
             modelBuilder.Entity("OSFRS.Models.Entities.Reservation", b =>
                 {
                     b.HasOne("OSFRS.Models.Entities.Facility", "Facility")
-                        .WithMany()
+                        .WithMany("Reservations")
                         .HasForeignKey("FacilityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OSFRS.Models.Entities.Facility", null)
-                        .WithMany("Reservations")
-                        .HasForeignKey("FacilityId1");
 
                     b.HasOne("OSFRS.Models.Entities.User", "User")
                         .WithMany()
@@ -334,12 +316,12 @@ namespace OSFRS.Backend.Migrations
                     b.HasOne("OSFRS.Models.Entities.Facility", "Facility")
                         .WithMany()
                         .HasForeignKey("FacilityId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("OSFRS.Models.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Facility");
 

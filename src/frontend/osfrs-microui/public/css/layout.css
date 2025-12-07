@@ -1,0 +1,194 @@
+/* =========================================================
+   BASE & GLOBAL
+   ========================================================= */
+body {
+    font-family: monospace;
+    background: #111;
+    color: #ddd;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    padding: 20px;
+}
+
+#greeter {
+    margin: 20px 0 0 20px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   NAVIGATION BAR
+   ========================================================= */
+nav {
+    background: #222;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #444;
+    overflow: visible;
+}
+
+nav a {
+    color: #4fc3f7;
+    text-decoration: none;
+}
+
+.left,
+.right {
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+/* =========================================================
+   FORM ELEMENTS
+   ========================================================= */
+.form-group {
+    margin-bottom: 10px;
+}
+
+input,
+select {
+    padding: 5px;
+    margin-top: 4px;
+    width: 300px;
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+button {
+    padding: 8px 16px;
+    background: #4fc3f7;
+    border: none;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+/* =========================================================
+   RESPONSE BOX
+   ========================================================= */
+#response {
+    margin-top: 30px;
+    padding: 15px;
+    background: #000;
+    border: 1px solid #444;
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+/* =========================================================
+   DROPDOWN MENU
+   ========================================================= */
+.dropdown {
+    position: relative;
+}
+
+.dropbtn {
+    cursor: pointer;
+    display: inline-block;
+    padding: 14px 4px;
+}
+
+.dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: -10%;
+    background: #222;
+    border: 1px solid #444;
+    min-width: 180px;
+
+    display: flex;
+    flex-direction: column;
+
+    /* Hidden state */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+
+    /* Fade-in animation */
+    transition:
+        opacity 0.2s ease-out,
+        transform 0.2s ease-out;
+}
+
+.dropdown-content a {
+    padding: 8px 12px;
+    display: block;
+    white-space: nowrap;
+}
+
+/* Show on hover */
+.dropdown:hover .dropdown-content {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0px);
+}
+
+/* Fade-out (slow) on leave */
+.dropdown:not(:hover) .dropdown-content {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+
+    transition:
+        opacity 0.3s ease-out,
+        transform 0s linear 2s;
+}
+
+/* Facility Table Styling */
+.dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #1a1a1a;
+    color: #ddd;
+    font-size: 15px;
+}
+
+.dataTable th {
+    background: #222;
+    color: #4fc3f7;
+    padding: 10px;
+    border-bottom: 2px solid #444;
+    font-weight: bold;
+    text-align: center;
+}
+
+.dataTable td {
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+}
+
+.dataTable tr:hover {
+    background: #2a2a2a;
+    transition: background 0.2s ease-in-out;
+}
+
+/* Delete button style */
+.dataTable button {
+    background: #e74c3c;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+    margin: 0;
+}
+
+.dataTable button:hover {
+    background: #c0392b;
+    color: #fff;
+    transition: 0.15s ease-in-out;
+}
+
+/* Make table scrollable on small screens */
+.dataTableWrapper {
+    overflow-x: auto;
+}

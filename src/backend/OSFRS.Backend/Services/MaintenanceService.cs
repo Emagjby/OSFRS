@@ -20,7 +20,10 @@ public class MaintenanceService : IMaintenanceService
     private readonly IAppLogger<MaintenanceService> _logger;
 
     private readonly IValidator<CreateMaintenanceRecordDto> _createValidator;
-    private readonly IUpdateValidator<UpdateMaintenanceRecordDto, MaintenanceRecord> _updateValidator;
+    private readonly IUpdateValidator<
+        UpdateMaintenanceRecordDto,
+        MaintenanceRecord
+    > _updateValidator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MaintenanceService"/> class.
@@ -43,6 +46,32 @@ public class MaintenanceService : IMaintenanceService
         _logger = logger;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+    }
+
+    /// <summary>
+    /// Retrieves maintenance records using server-side filtering.
+    /// </summary>
+    /// <param name="status">
+    /// Optional maintenance status filter (e.g. <c>Scheduled</c>, <c>InProgress</c>,
+    /// <c>Completed</c>, <c>Cancelled</c>). If omitted, all statuses are included.
+    /// </param>
+    /// <param name="facilityId">
+    /// Optional facility ID to restrict results to a specific facility.
+    /// If <c>null</c>, records for all facilities are included.
+    /// </param>
+    /// <returns>
+    /// A collection of <see cref="MaintenanceRecord"/> objects matching the filter criteria.
+    /// </returns>
+    public async Task<IEnumerable<MaintenanceRecord>> GetFilteredMaintenanceAsync(
+        string? status = null,
+        int? facilityId = null
+    )
+    {
+        var records = await _repo.QueryAsync(status, facilityId);
+
+        _logger.LogInformation("Fetched {Count} maintenance records (filtered).", records.Count());
+
+        return records;
     }
 
     /// <summary>
@@ -123,7 +152,7 @@ public class MaintenanceService : IMaintenanceService
             EndTime = dto.EndTime,
             Status = dto.Status,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         await _repo.AddAsync(entity);
@@ -140,57 +169,85 @@ public class MaintenanceService : IMaintenanceService
     }
 
     /// <summary>
-    /// Synchronizes facility statuses by checking active maintenance windows.
+    /// Synchronizes maintenance and facility statuses based on current time.
     /// </summary>
     /// <remarks>
-    /// Facilities currently within maintenance time ranges are marked
-    /// as <c>UnderMaintenance</c>, otherwise switched back to <c>Available</c>.
+    /// This operation normalizes all maintenance records and updates related facility
+    /// availability accordingly:
+    /// <list type="bullet">
+    /// <item>
+    /// <description><c>Scheduled</c> — if the start time is in the future.</description>
+    /// </item>
+    /// <item>
+    /// <description><c>InProgress</c> — if the current time falls between the record’s start and end.</description>
+    /// </item>
+    /// <item>
+    /// <description><c>Completed</c> — if the end time has already passed.</description>
+    /// </item>
+    /// <item>
+    /// <description><c>Cancelled</c> records are left unchanged.</description>
+    /// </item>
+    /// </list>
+    /// Facilities linked to any <c>InProgress</c> maintenance are marked as
+    /// <c>UnderMaintenance</c>. Facilities previously under maintenance with no
+    /// active tasks are reverted to <c>Available</c>.
     /// </remarks>
-    public async Task SyncFacilityStatusesAsync()
+    public async Task SyncStatusesAsync()
     {
         var now = DateTime.UtcNow;
-        _logger.LogInformation("Starting facility status sync based on maintenance records at {Now}.", now);
 
-        var allMaintenance = await _repo.GetAllAsync();
+        var records = await _repo.GetAllAsync();
 
-        foreach (var m in allMaintenance)
+        var facilitiesUnderMaintenance = new HashSet<int>();
+
+        foreach (var record in records)
         {
-            var facility = await _facilityRepo.GetByIdAsync(m.FacilityId);
-            if (facility is null)
-            {
-                _logger.LogWarning(
-                    "Facility ID {FacilityId} referenced by maintenance record {RecordId} not found.",
-                    m.FacilityId,
-                    m.Id
-                );
+            if (record.Status == "Cancelled")
                 continue;
-            }
 
-            var active = now >= m.StartTime && now <= m.EndTime;
-
-            if (active && facility.Status != "UnderMaintenance")
+            if (record.EndTime < now)
             {
-                facility.Status = "UnderMaintenance";
-                facility.UpdatedAt = DateTime.UtcNow;
-
-                _facilityRepo.Update(facility);
-                await _facilityRepo.SaveChangesAsync();
-
-                _logger.LogInformation("Facility ID {Id} marked as 'UnderMaintenance'.", facility.Id);
+                record.Status = "Completed";
             }
-            else if (!active && facility.Status == "UnderMaintenance")
+            else if (record.StartTime <= now && record.EndTime > now)
             {
-                facility.Status = "Available";
-                facility.UpdatedAt = DateTime.UtcNow;
-
-                _facilityRepo.Update(facility);
-                await _facilityRepo.SaveChangesAsync();
-
-                _logger.LogInformation("Facility ID {Id} marked as 'Available'.", facility.Id);
+                record.Status = "InProgress";
+                facilitiesUnderMaintenance.Add(record.FacilityId);
             }
+            else if (record.StartTime > now)
+            {
+                record.Status = "Scheduled";
+            }
+
+            record.UpdatedAt = DateTime.UtcNow;
         }
 
-        _logger.LogInformation("Facility status sync completed.");
+        await _repo.SaveChangesAsync();
+
+        // --------------------------------------
+        // FACILITY STATUS SYNC
+        // --------------------------------------
+        var allFacilities = await _facilityRepo.GetAllAsync();
+
+        foreach (var facility in allFacilities)
+        {
+            if (facility.Status == "Unavailable")
+                continue;
+
+            if (facilitiesUnderMaintenance.Contains(facility.Id))
+            {
+                facility.Status = "UnderMaintenance";
+            }
+            else
+            {
+                if (facility.Status == "UnderMaintenance")
+                    facility.Status = "Available";
+            }
+
+            facility.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _facilityRepo.SaveChangesAsync();
     }
 
     /// <summary>
@@ -200,10 +257,14 @@ public class MaintenanceService : IMaintenanceService
     /// <param name="dto">Update request DTO.</param>
     /// <returns>The updated record, or null if not found.</returns>
     /// <exception cref="NotFoundException">Thrown when the record does not exist.</exception>
-    public async Task<MaintenanceRecord?> UpdateMaintenanceAsync(int id, UpdateMaintenanceRecordDto dto)
+    public async Task<MaintenanceRecord?> UpdateMaintenanceAsync(
+        int id,
+        UpdateMaintenanceRecordDto dto
+    )
     {
-        var existing = await _repo.GetByIdAsync(id)
-                        ?? throw new NotFoundException("Maintenance record not found.");
+        var existing =
+            await _repo.GetByIdAsync(id)
+            ?? throw new NotFoundException("Maintenance record not found.");
 
         await _updateValidator.ValidateAsync(dto, existing);
 
@@ -218,7 +279,8 @@ public class MaintenanceService : IMaintenanceService
 
         _logger.LogInformation(
             "Updated maintenance record {Id} for facility {FacilityId}",
-            existing.Id, existing.FacilityId
+            existing.Id,
+            existing.FacilityId
         );
 
         return existing;

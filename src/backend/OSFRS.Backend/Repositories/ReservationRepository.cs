@@ -1,8 +1,9 @@
-using OSFRS.Models.Entities;
-using OSFRS.Backend.Data;
-using OSFRS.Backend.Interfaces.Logging;
 using Microsoft.EntityFrameworkCore;
+using OSFRS.Backend.Data;
+using OSFRS.Backend.Exceptions;
+using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
+using OSFRS.Models.Entities;
 
 namespace OSFRS.Backend.Repositories;
 
@@ -20,9 +21,8 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     public ReservationRepository(
         OSFRSDbContext context,
         IAppLogger<BaseRepository<Reservation>> logger
-    ) : base(context, logger)
-    {
-    }
+    )
+        : base(context, logger) { }
 
     /// <summary>
     /// Retrieves all reservations associated with the specified user.
@@ -31,9 +31,7 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <returns>A collection of reservations.</returns>
     public async Task<IEnumerable<Reservation>> GetByUserAsync(int userId)
     {
-        return await _dbSet
-            .Where(reservation => reservation.UserId == userId)
-            .ToListAsync();
+        return await _dbSet.Where(reservation => reservation.UserId == userId).ToListAsync();
     }
 
     /// <summary>
@@ -42,22 +40,7 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <returns>A collection of enriched reservation objects.</returns>
     public async Task<IEnumerable<Reservation>> GetAllWithUserAsync()
     {
-        return await _dbSet
-            .Include(r => r.User)
-            .ToListAsync();
-    }
-
-    /// <summary>
-    /// Retrieves a reservation by its identifier, including the associated user.
-    /// </summary>
-    /// <param name="id">The reservation identifier.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The reservation, or null if not found.</returns>
-    public override async Task<Reservation?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .Include(r => r.User)
-            .FirstOrDefaultAsync(r => r.Id == id);
+        return await _dbSet.Include(r => r.User).ToListAsync();
     }
 
     /// <summary>
@@ -70,12 +53,10 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     public async Task<bool> IsSlotAvailableAsync(DateTime start, DateTime end, int facilityId)
     {
         return !await _dbSet.AnyAsync(r =>
-            r.FacilityId == facilityId &&
-            (
-                (start >= r.StartTime && start < r.EndTime) ||
-                (end > r.StartTime && end <= r.EndTime) ||
-                (start <= r.StartTime && end >= r.EndTime)
-            )
+            r.FacilityId == facilityId
+            && r.Status != "Cancelled"
+            && start < r.EndTime
+            && end > r.StartTime
         );
     }
 
@@ -86,15 +67,29 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <param name="start">Optional range start.</param>
     /// <param name="end">Optional range end.</param>
     /// <returns>A collection of matching reservations.</returns>
-    public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(int facilityId, DateTime? start = null, DateTime? end = null)
+    public async Task<IEnumerable<Reservation>> GetByFacilityAndRangeAsync(
+        int facilityId,
+        DateTime? start = null,
+        DateTime? end = null
+    )
     {
         var query = _dbSet.Where(r => r.FacilityId == facilityId);
 
-        if (start.HasValue)
-            query = query.Where(r => r.StartTime >= start);
+        if (start.HasValue && end.HasValue)
+        {
+            var rangeStart = start.Value;
+            var rangeEnd = end.Value;
 
-        if (end.HasValue)
-            query = query.Where(r => r.EndTime <= end);
+            query = query.Where(r => r.StartTime < rangeEnd && r.EndTime > rangeStart);
+        }
+        else
+        {
+            if (start.HasValue)
+                query = query.Where(r => r.EndTime > start.Value);
+
+            if (end.HasValue)
+                query = query.Where(r => r.StartTime < end.Value);
+        }
 
         return await query.ToListAsync();
     }
@@ -107,7 +102,12 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <param name="start">Optional start time filter.</param>
     /// <param name="end">Optional end time filter.</param>
     /// <returns>A collection of matching reservations.</returns>
-    public async Task<IEnumerable<Reservation>> SearchAsync(int? userId = null, int? facilityId = null, DateTime? start = null, DateTime? end = null)
+    public async Task<IEnumerable<Reservation>> SearchAsync(
+        int? userId = null,
+        int? facilityId = null,
+        DateTime? start = null,
+        DateTime? end = null
+    )
     {
         var query = _dbSet.AsQueryable();
 
@@ -132,21 +132,19 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <param name="id">Reservation identifier.</param>
     /// <param name="status">New status value.</param>
     /// <returns>The updated reservation.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the reservation does not exist.</exception>
     public async Task<Reservation?> UpdateStatusAsync(int id, string status)
     {
-        var reservation = await _dbSet.FindAsync(id);
+        var reservation =
+            await _dbSet.FindAsync(id) ?? throw new NotFoundException("Reservation not found.");
 
-        if (reservation == null)
-        {
-            _logger.LogWarning("Attempted to update status for non-existant reservation {ReservationId}", id);
-            throw new InvalidOperationException("Reservation not found.");
-        }
-
-        reservation.Status = status;
+        reservation!.Status = status;
         reservation.UpdatedAt = DateTime.UtcNow;
 
-        _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", id, status);
+        _logger.LogInformation(
+            "Reservation {ReservationId} status updated to {Status}",
+            id,
+            status
+        );
 
         return reservation;
     }
@@ -159,21 +157,29 @@ public class ReservationRepository : BaseRepository<Reservation>, IReservationRe
     /// <param name="end">Proposed end time.</param>
     /// <param name="excludeReservationId">Reservation to exclude from conflict detection.</param>
     /// <returns>True if a conflict exists; otherwise false.</returns>
-    public async Task<bool> HasConflictAsync(int facilityId, DateTime start, DateTime end, int excludeReservationId)
+    public async Task<bool> HasConflictAsync(
+        int facilityId,
+        DateTime start,
+        DateTime end,
+        int excludeReservationId
+    )
     {
-        var conflictExists = await _dbSet.AnyAsync(reservation =>
-            reservation.FacilityId == facilityId &&
-            reservation.Id != excludeReservationId &&
-            (
-                (start >= reservation.StartTime && start < reservation.EndTime) ||
-                (end > reservation.StartTime && end <= reservation.EndTime) ||
-                (start <= reservation.StartTime && end >= reservation.EndTime)
-            )
+        var conflictExists = await _dbSet.AnyAsync(r =>
+            r.FacilityId == facilityId &&
+            r.Id != excludeReservationId &&
+            r.Status != "Cancelled" &&        // <— REQUIRED
+            r.StartTime < end &&
+            r.EndTime > start
         );
 
         if (conflictExists)
         {
-            _logger.LogWarning("Conflict detected for facility {FacilityId} between {Start} and {End}.", facilityId, start, end);
+            _logger.LogWarning(
+                "Conflict detected for facility {FacilityId} between {Start} and {End}.",
+                facilityId,
+                start,
+                end
+            );
         }
 
         return conflictExists;

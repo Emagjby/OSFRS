@@ -14,6 +14,23 @@ namespace OSFRS.Backend.Interfaces.Repository;
 public interface IMaintenanceRepository : IBaseRepository<MaintenanceRecord>
 {
     /// <summary>
+    /// Retrieves maintenance records optionally filtered by status and/or facility.
+    /// Filtering is performed at the database level.
+    /// </summary>
+    /// <param name="status">
+    /// Optional maintenance status (e.g., <c>Scheduled</c>, <c>InProgress</c>, <c>Completed</c>, <c>Cancelled</c>).
+    /// If <c>null</c>, no status filtering is applied.
+    /// </param>
+    /// <param name="facilityId">
+    /// Optional facility identifier. If provided, only maintenance for the specified
+    /// facility will be returned.
+    /// </param>
+    /// <returns>
+    /// A collection of <see cref="MaintenanceRecord"/> objects matching the applied filters.
+    /// </returns>
+    Task<IEnumerable<MaintenanceRecord>> QueryAsync(string? status = null, int? facilityId = null);
+
+    /// <summary>
     /// Retrieves all maintenance records associated with the specified facility.
     /// </summary>
     /// <param name="facilityId">The unique identifier of the facility.</param>

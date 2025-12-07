@@ -45,39 +45,65 @@ public class UpdateReservationValidator :
 
         // Ownership check (non-admins can only modify their own reservations)
         if (!isAdmin && existing.UserId != userId)
-            Forbidden("You do not have permission to modify this reservation.");
+            Conflict("You do not have permission to modify this reservation.");
 
         // Cancelled reservations cannot be modified by non-admins
         if (existing.Status == "Cancelled" && !isAdmin)
-            Forbidden("Cancelled reservations cannot be modified.");
+            Conflict("Cancelled reservations cannot be modified.");
 
         // Past reservations are locked for non-admins
         if (existing.StartTime < DateTime.UtcNow && !isAdmin)
-            Forbidden("Past reservations cannot be modified.");
+            Conflict("Past reservations cannot be modified.");
 
-        // Time range validation
-        EnsureValidTimeRange(dto.StartTime, dto.EndTime, "StartTime must be before EndTime.");
-        EnsureNotPast(dto.StartTime, "Reservation cannot start in the past.");
+        // Status rules
+        if (!isAdmin && dto.Status is not null)
+            Conflict("You are not allowed to modify the reservation status.");
 
-        // Maintenance overlap validation
-        var maintenance = await _maintenance.GetByFacilityAsync(existing.FacilityId);
-        bool maintenanceConflict = maintenance.Any(m =>
-            dto.StartTime < m.EndTime &&
-            dto.EndTime > m.StartTime
-        );
+        if (dto.Status is not null)
+        {
+            var allowedStatuses = new[] { "Pending", "Confirmed", "Cancelled" };
+            Require(allowedStatuses.Contains(dto.Status), "Invalid reservation status.");
+        }
 
-        if (maintenanceConflict)
-            Forbidden("Facility is under maintenance during the selected time window.");
+        // Time payload requirements
+        if (dto.StartTime.HasValue != dto.EndTime.HasValue)
+            Conflict("StartTime and EndTime must both be provided when updating the schedule.");
 
-        // Reservation conflict check
-        bool hasConflict = await _reservation.HasConflictAsync(
-            existing.FacilityId,
-            dto.StartTime,
-            dto.EndTime,
-            excludeReservationId: existing.Id
-        );
+        if (!isAdmin)
+        {
+            Require(dto.StartTime.HasValue && dto.EndTime.HasValue, "StartTime and EndTime are required.");
+        }
 
-        if (hasConflict && !isAdmin)
-            Forbidden("The selected time slot is already taken.");
+        var targetStart = dto.StartTime ?? existing.StartTime;
+        var targetEnd = dto.EndTime ?? existing.EndTime;
+
+        var shouldValidateTimeWindow = dto.StartTime.HasValue || dto.EndTime.HasValue || !isAdmin;
+
+        if (shouldValidateTimeWindow)
+        {
+            EnsureValidTimeRange(targetStart, targetEnd, "StartTime must be before EndTime.");
+
+            if (!isAdmin)
+                EnsureNotPast(targetStart, "Reservation cannot start in the past.");
+
+            var maintenance = await _maintenance.GetByFacilityAsync(existing.FacilityId);
+            bool maintenanceConflict = maintenance.Any(m =>
+                targetStart < m.EndTime &&
+                targetEnd > m.StartTime
+            );
+
+            if (maintenanceConflict)
+                Conflict("Facility is under maintenance during the selected time window.");
+
+            bool hasConflict = await _reservation.HasConflictAsync(
+                existing.FacilityId,
+                targetStart,
+                targetEnd,
+                excludeReservationId: existing.Id
+            );
+
+            if (hasConflict && !isAdmin)
+                Conflict("The selected time slot is already taken.");
+        }
     }
 }

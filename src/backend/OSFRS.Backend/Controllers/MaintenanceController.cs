@@ -26,6 +26,29 @@ public class MaintenanceController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves maintenance records with optional filtering.
+    /// </summary>
+    /// <param name="status">
+    /// Optional maintenance status filter (e.g. <c>Scheduled</c>, <c>InProgress</c>,
+    /// <c>Completed</c>, <c>Cancelled</c>). If omitted, all statuses are included.
+    /// </param>
+    /// <param name="facilityId">
+    /// Optional facility ID filter. If omitted, results include all facilities.
+    /// </param>
+    /// <returns>A filtered list of maintenance records.</returns>
+    /// <response code="200">Returns matching maintenance records.</response>
+    [HttpGet("all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetFilteredMaintenance(
+        [FromQuery] string? status,
+        [FromQuery] int? facilityId
+    )
+    {
+        var records = await _service.GetFilteredMaintenanceAsync(status, facilityId);
+        return Ok(records);
+    }
+
+    /// <summary>
     /// Retrieves all maintenance records for a specific facility.
     /// </summary>
     /// <param name="facilityId">The ID of the facility.</param>
@@ -95,7 +118,10 @@ public class MaintenanceController : ControllerBase
     /// <response code="404">Maintenance record not found.</response>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateMaintenance(int id, [FromBody] UpdateMaintenanceRecordDto dto)
+    public async Task<IActionResult> UpdateMaintenance(
+        int id,
+        [FromBody] UpdateMaintenanceRecordDto dto
+    )
     {
         var updated = await _service.UpdateMaintenanceAsync(id, dto);
 
@@ -129,32 +155,31 @@ public class MaintenanceController : ControllerBase
         if (!deleted)
             return NotFound(new { message = "Maintenance record not found." });
 
-        await _usage.LogEventAsync(
-            UsageEventBuilder.Create(UsageEventTypes.MaintenanceDeleted)
-        );
+        await _usage.LogEventAsync(UsageEventBuilder.Create(UsageEventTypes.MaintenanceDeleted));
 
         return Ok(new { message = "Maintenance record deleted successfully." });
     }
 
     /// <summary>
-    /// Synchronizes facility statuses based on active maintenance records.
+    /// Triggers a full synchronization of maintenance records and facility statuses.
     /// </summary>
     /// <returns>A confirmation message.</returns>
     /// <remarks>
-    /// This operation updates each facility's status to <c>UnderMaintenance</c>
-    /// or back to <c>Available</c> depending on active maintenance windows.
-    /// Only administrators may run this operation.
+    /// This endpoint recalculates maintenance states (Scheduled, InProgress, Completed)
+    /// and updates related facilities accordingly, marking them as
+    /// <c>UnderMaintenance</c> when an active maintenance window is detected or
+    /// reverting them to <c>Available</c> when no such window exists.
+    ///
+    /// Only administrators are authorized to perform this operation.
     /// </remarks>
     /// <response code="200">Synchronization completed successfully.</response>
     [HttpPost("sync-statuses")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SyncStatuses()
     {
-        await _service.SyncFacilityStatusesAsync();
+        await _service.SyncStatusesAsync();
 
-        await _usage.LogEventAsync(
-            UsageEventBuilder.Create(UsageEventTypes.StatusSyncRun)
-        );
+        await _usage.LogEventAsync(UsageEventBuilder.Create(UsageEventTypes.StatusSyncRun));
 
         return Ok(new { message = "Facility statuses synchronized successfully." });
     }

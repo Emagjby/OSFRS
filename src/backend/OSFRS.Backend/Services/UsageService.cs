@@ -3,7 +3,7 @@ using OSFRS.Backend.Helpers.Usage;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
-using OSFRS.Backend.Validators.Usage;
+using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Models.Entities;
 using System.Text.Json;
 
@@ -17,7 +17,7 @@ public class UsageService : IUsageService
 {
     private readonly IUsageRepository _repo;
     private readonly IAppLogger<UsageService> _logger;
-    private readonly UsageQueryValidator _validator;
+    private readonly IValidator<(string? eventType, int? userId, int? facilityId, DateTime? from, DateTime? to)> _validator;
 
     /// <summary>
     /// Initializes a new <see cref="UsageService"/> instance.
@@ -28,7 +28,7 @@ public class UsageService : IUsageService
     public UsageService(
         IUsageRepository repo,
         IAppLogger<UsageService> logger,
-        UsageQueryValidator validator)
+        IValidator<(string? eventType, int? userId, int? facilityId, DateTime? from, DateTime? to)> validator)
     {
         _repo = repo;
         _logger = logger;
@@ -112,7 +112,7 @@ public class UsageService : IUsageService
         DateTime? start = null,
         DateTime? end = null)
     {
-        _validator.Validate(eventType, userId, facilityId, start, end);
+        await _validator.ValidateAsync((eventType, userId, facilityId, start, end));
 
         var events = await _repo.QueryAsync(eventType, userId, facilityId, start, end);
 

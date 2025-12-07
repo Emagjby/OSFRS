@@ -4,13 +4,12 @@ using OSFRS.Backend.Services;
 using OSFRS.Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
-using System.Text;
 using OSFRS.Backend.Interfaces.Logging;
 using OSFRS.Backend.Helpers.Logging;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Hangfire.MemoryStorage;
 using OSFRS.Backend.Interfaces.Repository;
 using OSFRS.Backend.Interfaces.Service;
 using OSFRS.Backend.Interfaces.Helper;
@@ -28,6 +27,8 @@ using OSFRS.Backend.DTOs.Maintenance;
 using OSFRS.Backend.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
+using Sprache;
+using Microsoft.Extensions.Options;
 
 Env.Load();
 
@@ -38,6 +39,7 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
+// DB configuration (skip for tests)
 if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
 {
     var connString = Environment.GetEnvironmentVariable("OSFRS_DB_CONN");
@@ -49,9 +51,6 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
 }
 
 // Dependency Injection
-builder.Services.AddScoped<FacilityAvailabilityValidator>();
-builder.Services.AddScoped<CancelReservationValidator>();
-builder.Services.AddScoped<UsageQueryValidator>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -69,11 +68,16 @@ builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
+// Validators
 builder.Services.AddScoped<IValidator<LoginRequestDto>, UserLoginValidator>();
 builder.Services.AddScoped<IValidator<UserRegistrationDto>, UserRegistrationValidator>();
 builder.Services.AddScoped<IValidator<CreateFacilityDto>, CreateFacilityValidator>();
 builder.Services.AddScoped<IValidator<(CreateReservationDto, int)>, CreateReservationValidator>();
 builder.Services.AddScoped<IValidator<(UpdateReservationDto dto, Reservation existing, bool isAdmin, int userId)>, UpdateReservationValidator>();
+builder.Services.AddScoped<IValidator<(Reservation reservation, int userId)>, CancelReservationValidator>();
+builder.Services.AddScoped<IValidator<(Facility facility, bool isAvailable)>, FacilityAvailabilityValidator>();
+builder.Services.AddScoped<IValidator<(string? eventType, int? userId, int? facilityId, DateTime? from, DateTime? to)>, UsageQueryValidator>();
 builder.Services.AddScoped<IValidator<CreateMaintenanceRecordDto>, CreateMaintenanceValidator>();
 builder.Services.AddScoped<IUpdateValidator<UpdatedProfileDto, User>, ProfileUpdateValidator>();
 builder.Services.AddScoped<IUpdateValidator<UpdateFacilityDto, Facility>, UpdateFacilityValidator>();
@@ -82,40 +86,33 @@ builder.Services.AddScoped<IUpdateValidator<UpdateMaintenanceRecordDto, Maintena
 builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Hangfire setup
-builder.Services.AddHangfire((sp, config) =>
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-          .UseSimpleAssemblyNameTypeSerializer()
-          .UseRecommendedSerializerSettings()
-          .UsePostgreSqlStorage(options =>
-          {
-              options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
-          });
-});
+    builder.Services.AddHangfire((sp, config) =>
+    {
+        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+              .UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UsePostgreSqlStorage(options =>
+              {
+                  options.UseNpgsqlConnection(Environment.GetEnvironmentVariable("OSFRS_DB_CONN"));
+              });
+    });
 
-// Hangfire server
-builder.Services.AddHangfireServer();
+    // Hangfire server
+    builder.Services.AddHangfireServer();
+}
 
 // Controllers
 builder.Services.AddControllers();
 
-// JWT Authentication
+//  JWT Override Hook for Security Tests
+builder.Services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
+builder.Services.AddSingleton<IConfigureNamedOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
-            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET")!)
-            )
-        };
-    });
+    .AddJwtBearer();
+
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -130,6 +127,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -140,23 +138,39 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName);
 });
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowMicroUI", policy =>
+    {
+        policy.WithOrigins("http://127.0.0.1:8000", "http://localhost:8000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+// Hangfire jobs
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var jobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    using (var scope = app.Services.CreateScope())
+    {
+        var jobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    jobManager.AddOrUpdate<IUsageService>(
-        "daily-usage-aggregation",
-        service => service.AggregateAsync(),
-        "55 23 * * *"
-    );
+        jobManager.AddOrUpdate<IUsageService>(
+            "daily-usage-aggregation",
+            service => service.AggregateAsync(),
+            "55 23 * * *"
+        );
 
-    jobManager.AddOrUpdate<IMaintenanceService>(
-        "facility-status-sync",
-        service => service.SyncFacilityStatusesAsync(),
-        "*/5 * * * *" // every 5 minutes
-    );
+        jobManager.AddOrUpdate<IMaintenanceService>(
+            "status-sync",
+            service => service.SyncStatusesAsync(),
+            "*/1 * * * *"
+        );
+    }
 }
 
 app.UseRouting();
@@ -178,15 +192,17 @@ if (Environment.GetEnvironmentVariable("DEBUG_MODE") == "Enabled")
     });
 }
 
-// Add JWT auth middleware
+app.UseCors("AllowMicroUI");
+
+// JWT Middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map controllers
+// Controllers
 app.MapControllers();
 
-// Debug
-app.MapGet("/", () => "API is running!");
+// Debug endpoint
+app.MapGet("/health", () => "API is running... (v2)");
 
 app.Run();
 

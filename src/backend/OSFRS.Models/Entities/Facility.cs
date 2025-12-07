@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace OSFRS.Models.Entities;
 
@@ -27,6 +28,9 @@ public class Facility
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    [JsonIgnore]
     public ICollection<Reservation>? Reservations { get; set; }
+
+    [JsonIgnore]
     public ICollection<MaintenanceRecord>? MaintenanceRecords { get; set; }
 }

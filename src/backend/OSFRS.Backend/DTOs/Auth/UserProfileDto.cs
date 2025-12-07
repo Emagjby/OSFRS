@@ -14,30 +14,15 @@ public record UserProfileDto
     /// <summary>
     /// The user's full name.
     /// </summary>
-    public string Name { get; init; } = null!;
+    public string? Name { get; init; }
 
     /// <summary>
     /// The username associated with the user.
     /// </summary>
-    public string Username { get; init; } = null!;
+    public string? Username { get; init; }
 
     /// <summary>
     /// The user's email address.
     /// </summary>
-    public string Email { get; init; } = null!;
-
-    /// <summary>
-    /// The role assigned to the user (e.g., User, Admin).
-    /// </summary>
-    public string Role { get; init; } = null!;
-
-    /// <summary>
-    /// The UTC timestamp when the user account was created.
-    /// </summary>
-    public DateTime CreatedAt { get; init; }
-
-    /// <summary>
-    /// The UTC timestamp of the user's most recent update.
-    /// </summary>
-    public DateTime UpdatedAt { get; init; }
+    public string? Email { get; init; }
 }

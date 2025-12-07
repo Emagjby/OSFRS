@@ -10,7 +10,9 @@ namespace OSFRS.Backend.Validators.Reservations;
 /// Ensures the facility exists, the time window is valid,
 /// no maintenance overlaps occur, and the slot is available.
 /// </summary>
-public class CreateReservationValidator : BaseValidator, IValidator<(CreateReservationDto dto, int userId)>
+public class CreateReservationValidator
+    : BaseValidator,
+        IValidator<(CreateReservationDto dto, int userId)>
 {
     private readonly IFacilityRepository _facility;
     private readonly IReservationRepository _reservation;
@@ -22,7 +24,8 @@ public class CreateReservationValidator : BaseValidator, IValidator<(CreateReser
     public CreateReservationValidator(
         IFacilityRepository facility,
         IReservationRepository reservation,
-        IMaintenanceRepository maintenance)
+        IMaintenanceRepository maintenance
+    )
     {
         _facility = facility;
         _reservation = reservation;
@@ -48,13 +51,17 @@ public class CreateReservationValidator : BaseValidator, IValidator<(CreateReser
 
         var maintenance = await _maintenance.GetByFacilityAsync(dto.FacilityId);
         bool overlapsMaintenance = maintenance.Any(m =>
-            dto.StartTime < m.EndTime && dto.EndTime > m.StartTime);
+            dto.StartTime < m.EndTime && dto.EndTime > m.StartTime
+        );
 
         if (overlapsMaintenance)
-            Forbidden("Facility is under maintenance during the selected time window.");
+            Conflict("Facility is under maintenance during the selected time window.");
 
         bool available = await _reservation.IsSlotAvailableAsync(
-            dto.StartTime, dto.EndTime, dto.FacilityId);
+            dto.StartTime,
+            dto.EndTime,
+            dto.FacilityId
+        );
 
         EnsureNoConflict(available, "The selected time slot is unavailable.");
 

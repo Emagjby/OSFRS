@@ -27,9 +27,11 @@ public class CreateFacilityValidator : BaseValidator, IValidator<CreateFacilityD
     {
         // NAME
         Require(!string.IsNullOrWhiteSpace(dto.Name), "Name is required.");
+        Require(dto.Name.Length <= 100, "Name cannot exceed 100 characters.");
 
         // TYPE
         Require(!string.IsNullOrWhiteSpace(dto.Type), "Facility type is required.");
+        Require(dto.Type.Length <= 50, "Type cannot exceed 50 characters.");
         // Future enhancement:
         // Require(AllowedTypes.Contains(dto.Type), $"Invalid facility type '{dto.Type}'.");
 

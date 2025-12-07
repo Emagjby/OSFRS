@@ -39,7 +39,7 @@ public class UpdateMaintenanceValidator :
         var now = DateTime.UtcNow;
 
         if (existing.EndTime < now)
-            Forbidden("Past maintenance records cannot be modified.");
+            Conflict("Past maintenance records cannot be modified.");
 
         var newStart = dto.StartTime ?? existing.StartTime;
         var newEnd = dto.EndTime ?? existing.EndTime;

@@ -9,7 +9,7 @@ namespace OSFRS.Backend.Validators.Facilities;
 /// Validates whether a facility's availability status can be changed.
 /// Prevents enabling availability during active maintenance windows.
 /// </summary>
-public class FacilityAvailabilityValidator : BaseValidator
+public class FacilityAvailabilityValidator : BaseValidator, IValidator<(Facility facility, bool newAvailability)>
 {
     private readonly IMaintenanceRepository _repo;
 
@@ -25,23 +25,25 @@ public class FacilityAvailabilityValidator : BaseValidator
     /// <summary>
     /// Validates whether the specified <see cref="Facility"/> can transition to the requested availability state.
     /// </summary>
-    /// <param name="facility">The facility being updated.</param>
-    /// <param name="newAvailability">The requested availability state.</param>
+    /// <param name="data">Takes the facility being updated
+    /// and the requested availability state.</param>
     /// <returns>A completed task if validation succeeds.</returns>
-    public async Task ValidateAsync(Facility facility, bool newAvailability)
+    public async Task ValidateAsync((Facility facility, bool newAvailability) data)
     {
+        var (facility, newAvailability) = data;
+
         EnsureFound(facility, "Facility not found.");
 
         var now = DateTime.UtcNow;
         var activeMaintenance = await _repo.GetByFacilityAsync(facility.Id);
 
         bool isUnderMaintenance = activeMaintenance.Any(m =>
-            now >= m.StartTime && now <= m.EndTime
+            m.Status == "InProgress"
         );
 
         if (newAvailability && isUnderMaintenance)
         {
-            Forbidden("Facility cannot be marked Available during active maintenance.");
+            Conflict("Facility cannot be marked Available during active maintenance.");
         }
     }
 }

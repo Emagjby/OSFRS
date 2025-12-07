@@ -1,4 +1,5 @@
 using OSFRS.Backend.Helpers.Usage;
+using OSFRS.Backend.Interfaces.Validator;
 using OSFRS.Backend.Validators.Base;
 
 namespace OSFRS.Backend.Validators.Usage;
@@ -7,24 +8,31 @@ namespace OSFRS.Backend.Validators.Usage;
 /// Validates query parameters used for filtering usage analytics and usage event lookups.
 /// Ensures valid numeric identifiers, valid event types, and correct date ranges.
 /// </summary>
-public class UsageQueryValidator : BaseValidator
+public class UsageQueryValidator : BaseValidator, IValidator<(string? eventType, int? userId, int? facilityId, DateTime? from, DateTime? to)>
 {
     /// <summary>
     /// Validates a usage query request.
     /// Checks ID validity, event type correctness, and time-range ordering.
     /// </summary>
-    /// <param name="eventType">Event type being queried (optional).</param>
-    /// <param name="userId">User ID filter (optional).</param>
-    /// <param name="facilityId">Facility ID filter (optional).</param>
-    /// <param name="from">Start date/time (optional).</param>
-    /// <param name="to">End date/time (optional).</param>
-    public void Validate(
-        string? eventType,
+    /// <param name="data">Data takes:
+    /// the event type being queried (optional);
+    /// the user ID filter (optional);
+    /// the facility ID filter (optional);
+    /// the start date/time (optional);
+    /// and the end date/time (optional).</param>
+    public Task ValidateAsync(
+        (string? eventType,
         int? userId,
         int? facilityId,
         DateTime? from,
-        DateTime? to)
+        DateTime? to) data)
     {
+        (string? eventType,
+        int? userId,
+        int? facilityId,
+        DateTime? from,
+        DateTime? to) = data;
+
         if (userId.HasValue)
             Require(userId > 0, "UserId must be greater than zero.");
 
@@ -39,5 +47,7 @@ public class UsageQueryValidator : BaseValidator
 
         if (from.HasValue && to.HasValue)
             Require(from <= to, "'from' must be <= 'to'.");
+
+        return Task.CompletedTask;
     }
 }

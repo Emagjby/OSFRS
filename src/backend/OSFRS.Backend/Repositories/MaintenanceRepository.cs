@@ -21,8 +21,24 @@ public class MaintenanceRepository : BaseRepository<MaintenanceRecord>, IMainten
     public MaintenanceRepository(
         OSFRSDbContext context,
         IAppLogger<BaseRepository<MaintenanceRecord>> logger
-    ) : base(context, logger)
+    )
+        : base(context, logger) { }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<MaintenanceRecord>> QueryAsync(
+        string? status = null,
+        int? facilityId = null
+    )
     {
+        IQueryable<MaintenanceRecord> query = _dbSet;
+
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(m => m.Status == status);
+
+        if (facilityId.HasValue)
+            query = query.Where(m => m.FacilityId == facilityId.Value);
+
+        return await query.ToListAsync();
     }
 
     /// <summary>
@@ -34,7 +50,10 @@ public class MaintenanceRepository : BaseRepository<MaintenanceRecord>, IMainten
     /// </returns>
     public async Task<IEnumerable<MaintenanceRecord>> GetByFacilityAsync(int facilityId)
     {
-        _logger.LogInformation("Fetching maintenance records for Facility ID {FacilityId}", facilityId);
+        _logger.LogInformation(
+            "Fetching maintenance records for Facility ID {FacilityId}",
+            facilityId
+        );
 
         return await _dbSet
             .Where(m => m.FacilityId == facilityId)

@@ -23,7 +23,7 @@ public class FacilityService
 
     private readonly IValidator<CreateFacilityDto> _createValidator;
     private readonly IUpdateValidator<UpdateFacilityDto, Facility> _updateValidator;
-    private readonly FacilityAvailabilityValidator _availabilityValidator;
+    private readonly IValidator<(Facility facility, bool newAvailability)> _availabilityValidator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FacilityService"/> class.
@@ -38,7 +38,7 @@ public class FacilityService
         IAppLogger<FacilityService> logger,
         IValidator<CreateFacilityDto> createValidator,
         IUpdateValidator<UpdateFacilityDto, Facility> updateValidator,
-        FacilityAvailabilityValidator availabilityValidator
+        IValidator<(Facility facility, bool newAvailability)> availabilityValidator
     ) : base(
         repo,
         MapToDto,
@@ -116,7 +116,7 @@ public class FacilityService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated facility DTO, or null if not found.</returns>
     /// <exception cref="NotFoundException">Thrown when the facility does not exist.</exception>
-    public async Task<FacilityDto?> UpdateFacilityAsync(
+    public override async Task<FacilityDto?> UpdateAsync(
         int id,
         UpdateFacilityDto dto,
         CancellationToken cancellationToken = default
@@ -147,7 +147,7 @@ public class FacilityService
         if (existing is null)
             throw new NotFoundException("Facility not found.");
 
-        await _availabilityValidator.ValidateAsync(existing, isAvailable);
+        await _availabilityValidator.ValidateAsync((existing, isAvailable));
 
         await _repo.UpdateAvailabilityAsync(facilityId, isAvailable);
         await _repo.SaveChangesAsync();
@@ -179,9 +179,9 @@ public class FacilityService
     /// <summary>
     /// Returns all facilities with logging of total record count.
     /// </summary>
-    public override async Task<IEnumerable<FacilityDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public override async Task<IEnumerable<FacilityDto>> GetAllReadonlyAsync(CancellationToken cancellationToken = default)
     {
-        var facilities = await base.GetAllAsync(cancellationToken);
+        var facilities = await base.GetAllReadonlyAsync(cancellationToken);
 
         _logger.LogInformation("Retrieved {Count} facilities.", facilities.Count());
 
