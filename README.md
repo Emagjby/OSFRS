@@ -93,6 +93,12 @@ _To be added_
 
 ## Usage
 
+## Quick Start
+
+## Motivation
+
+## Contributing
+
 _To be added_
 
 ---
