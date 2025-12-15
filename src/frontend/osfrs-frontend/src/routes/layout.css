@@ -1,81 +1,77 @@
 @import "tailwindcss";
 
 @theme {
-    --color-bg-primary: #0f172a;
-    --color-bg-secondary: #020617;
-    --color-bg-card: #020617cc;
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #020617;
+  --color-bg-card: #020617cc;
 
-    --color-text-primary: #e5e7eb;
-    --color-text-secondary: #94a3b8;
-    --color-text-disabled: #64748b;
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #94a3b8;
+  --color-text-disabled: #64748b;
 
-    --color-border-subtle: #1e293b;
-    --color-border-input: #334155;
+  --color-border-subtle: #1e293b;
+  --color-border-input: #334155;
 
-    --color-success: #22c55e;
-    --color-error: #ef4444;
-    --color-warning: #f59e0b;
-    --color-info: #38bdf8;
-    --color-admin: #a855f7;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #38bdf8;
+  --color-admin: #a855f7;
 
-    --font-sans: Inter, system-ui, sans-serif;
+  --font-sans: Inter, system-ui, sans-serif;
 
-    --radius-card: 12px;
-    --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-button: 8px;
 
-    --max-width-content: 1200px;
+  --max-width-content: 1200px;
 }
 
 @layer base {
-    body {
-        background:
-            radial-gradient(1200px 600px at 50% 20%,
-                rgba(255, 255, 255, 0.04),
-                transparent 70%),
-            linear-gradient(180deg, #030718 0%, #020617 100%);
-        color: var(--color-text-primary);
-        font-family: var(--font-sans);
-    }
+  body {
+    background: linear-gradient(180deg, #030718 0%, #020617 100%);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+  }
 }
 
 @layer components {
-    .card {
-        background-color: var(--color-bg-card);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-card);
-        padding: 1.25rem;
-    }
+  .card {
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    padding: 1.25rem;
+  }
 
-    .btn-primary {
-        background-color: var(--color-success);
-        color: var(--color-bg-secondary);
-        border-radius: var(--radius-button);
-        padding: 0.5rem 1rem;
-    }
+  .btn-primary {
+    background-color: var(--color-success);
+    color: var(--color-bg-secondary);
+    border-radius: var(--radius-button);
+    padding: 0.5rem 1rem;
+  }
 
-    .btn-secondary {
-        border: 1px solid var(--color-border-input);
-        color: var(--color-text-primary);
-        border-radius: var(--radius-button);
-        padding: 0.5rem 1rem;
-    }
+  .btn-secondary {
+    border: 1px solid var(--color-border-input);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-button);
+    padding: 0.5rem 1rem;
+  }
 
-    .btn-danger {
-        background-color: var(--color-error);
-        color: var(--color-bg-secondary);
-        border-radius: var(--radius-button);
-        padding: 0.5rem 1rem;
-    }
+  .btn-danger {
+    background-color: var(--color-error);
+    color: var(--color-bg-secondary);
+    border-radius: var(--radius-button);
+    padding: 0.5rem 1rem;
+  }
 
-    .input {
-        background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-input);
-        border-radius: var(--radius-button);
-        padding: 0.5rem 0.75rem;
-    }
+  .input {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-button);
+    padding: 0.5rem 0.75rem;
+  }
 
-    .input:focus {
-        outline: none;
-        border-color: var(--color-info);
-    }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-info);
+  }
 }
