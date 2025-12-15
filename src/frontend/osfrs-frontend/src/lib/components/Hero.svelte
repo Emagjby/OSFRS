@@ -3,7 +3,7 @@
 </script>
 
 <div
-  class="flex flex-col justify-center items-center gap-4 mx-auto py-12 px-6 m-24 w-full"
+  class="flex flex-col justify-center items-center min-h-[min(85vh,700px)] gap-4 mx-auto py-12 px-6 w-full"
 >
   <div>
     <h1

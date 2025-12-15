@@ -28,10 +28,37 @@
 
 @layer base {
   body {
-    background: linear-gradient(135deg, #101214 0%, #121417 40%, #0b0d10 100%);
+    background: linear-gradient(135deg, #121417 0%, #14171b 40%, #0f1114 100%);
     color: var(--color-text-primary);
     font-family: var(--font-sans);
     letter-spacing: 0.25px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: rgba(230, 231, 233, 0.14);
+      border-radius: 9999px;
+      border: 3px solid transparent;
+      background-clip: content-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(255, 255, 255, 0.22);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(230, 231, 233, 0.14) transparent;
+    }
   }
 }
 
@@ -79,6 +106,6 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    transform: tranlateY(-0.5px);
+    transform: translateY(-0.5px);
   }
 }
