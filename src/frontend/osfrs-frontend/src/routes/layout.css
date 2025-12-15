@@ -2,6 +2,8 @@
 @import "tailwindcss";
 
 @theme {
+  --breakpoint-xs: 540px;
+
   --color-bg-secondary: #0f1114;
   --color-bg-card: rgba(15, 17, 20, 0.8);
 
