@@ -24,11 +24,11 @@
   >
     <a
       class="flex justify-center items-center font-normal btn-neutral border-success-secondary bg-success text-md xs:text-lg px-6 py-3 w-full xs:w-auto"
-      href={href("/facilities")}>Browse Facilities</a
+      href={href("/facilities")}>Get Started</a
     >
     <a
       class="flex justify-center items-center font-medium btn-neutral text-md xs:text-lg px-6 py-3 w-full xs:w-auto"
-      href={href("/availability")}>Check Availability</a
+      href={href("/availability")}>Browse Facilities</a
     >
   </div>
 </div>

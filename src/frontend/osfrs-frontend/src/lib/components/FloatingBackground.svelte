@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   type Icon = {
+    id: string;
     baseX: number;
     baseY: number;
     x: number;
     y: number;
+    rotation: number;
     speed: number;
     phase: number;
     scale: number;
@@ -21,54 +24,82 @@
     "/icon5.svg",
   ];
 
-  const GRID_SPACING = 320;
-  const JITTER_X = 40;
-  const JITTER_Y = 40;
+  const GRID_OFFSET_X: number = 0.25;
+  const GRID_OFFSET_Y: number = 0.25;
 
-  const GRID_OFFSET_X = 0.25;
-  const GRID_OFFSET_Y = 0.25;
+  let generationOpacity: number = 1;
 
-  let root: HTMLDivElement;
-
+  let root: HTMLDivElement | null = null;
   let icons: Icon[] = [];
   let raf: number | null = null;
+  let resizeTimeout: number | null = null;
+  let lastWidth: number = 0;
 
   const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
+  function getColumnCount(vw: number) {
+    if (vw < 700) return 2;
+    if (vw < 1440) return 3;
+    if (vw < 1800) return 4;
+    return 5;
+  }
+
+  function pickIcon(row: number, col: number, placed: Map<string, string>) {
+    const left = placed.get(`${row}x${col - 1}`);
+    const top = placed.get(`${row - 1}x${col}`);
+
+    const forbidden = new Set([left, top]);
+    const choices = ICONS.filter((i) => !forbidden.has(i));
+
+    return choices.length
+      ? choices[Math.floor(Math.random() * choices.length)]
+      : ICONS[Math.floor(Math.random() * ICONS.length)];
+  }
+
   function generateIcons() {
-    const vw = window.innerWidth;
-    const docH = document.documentElement.scrollHeight;
+    const vw: number = window.innerWidth;
+    const docH: number = document.documentElement.scrollHeight;
 
     if (root) {
       root.style.height = `${docH}px`;
     }
 
-    const cols = Math.max(1, Math.floor(vw / GRID_SPACING));
-    const rows = Math.max(1, Math.floor(docH / GRID_SPACING));
+    const cols: number = getColumnCount(vw);
+    const approxRowHeight: number = 320;
+    const rows: number = Math.max(1, Math.floor(docH / approxRowHeight));
 
+    const cellW: number = vw / cols;
+    const cellH: number = docH / rows;
+
+    const jitterX: number = Math.min(cellW * 0.25, 60);
+    const jitterY: number = Math.min(cellH * 0.25, 60);
+
+    const placed = new SvelteMap<string, string>();
     const result: Icon[] = [];
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const cellW = vw / cols;
-        const cellH = docH / rows;
-
         const baseX =
-          col * cellW + cellW * GRID_OFFSET_X + rand(-JITTER_X, JITTER_X);
+          col * cellW + cellW * GRID_OFFSET_X + rand(-jitterX, jitterX);
 
         const baseY =
-          row * cellH + cellH * GRID_OFFSET_Y + rand(-JITTER_Y, JITTER_Y);
+          row * cellH + cellH * GRID_OFFSET_Y + rand(-jitterY, jitterY);
+
+        const src = pickIcon(row, col, placed);
+        placed.set(`${row}x${col}`, src);
 
         result.push({
+          id: `${row}x${col}`,
           baseX,
           baseY,
           x: baseX,
           y: baseY,
+          rotation: rand(-12, 12),
           speed: rand(0.0004, 0.001),
           phase: Math.random() * Math.PI * 2,
           scale: rand(0.6, 1.0),
           opacity: rand(0.18, 0.38),
-          src: ICONS[Math.floor(Math.random() * ICONS.length)],
+          src,
         });
       }
     }
@@ -87,37 +118,58 @@
     raf = window.requestAnimationFrame(animate);
   }
 
+  function onResize() {
+    const currentWidth: number = window.innerWidth;
+
+    if (Math.abs(currentWidth - lastWidth) < 20) {
+      return;
+    }
+
+    lastWidth = currentWidth;
+
+    if (resizeTimeout !== null) {
+      clearTimeout(resizeTimeout);
+    }
+
+    generationOpacity = 0;
+
+    resizeTimeout = window.setTimeout(() => {
+      if (raf !== null) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+
+      icons = [];
+
+      requestAnimationFrame(() => {
+        generateIcons();
+        generationOpacity = 1;
+        raf = requestAnimationFrame(animate);
+      });
+
+      resizeTimeout = null;
+    }, 180);
+  }
+
   onMount(() => {
     generateIcons();
     raf = window.requestAnimationFrame(animate);
-
-    const onResize = () => {
-      if (raf !== null) {
-        window.cancelAnimationFrame(raf);
-      }
-      generateIcons();
-      raf = window.requestAnimationFrame(animate);
-    };
 
     window.addEventListener("resize", onResize);
 
     return () => {
       window.removeEventListener("resize", onResize);
-      if (raf !== null) {
-        window.cancelAnimationFrame(raf);
-      }
+      if (raf !== null) window.cancelAnimationFrame(raf);
     };
   });
 
   onDestroy(() => {
-    if (raf !== null) {
-      window.cancelAnimationFrame(raf);
-    }
+    if (raf !== null) window.cancelAnimationFrame(raf);
   });
 </script>
 
-<div class="bg-root bind:this={root}">
-  {#each icons as icon}
+<div class="bg-root" bind:this={root} style="opacity: {generationOpacity}">
+  {#each icons as icon (icon.id)}
     <img
       src={icon.src}
       alt=""
@@ -125,6 +177,7 @@
       style="
         transform:
           translate3d({icon.x}px, {icon.y}px, 0)
+          rotate({icon.rotation}deg)
           scale({icon.scale});
         opacity: {icon.opacity};
       "
@@ -141,6 +194,7 @@
     height: 100%;
     pointer-events: none;
     z-index: 0;
+    transition: opacity 220ms ease;
   }
 
   .bg-icon {
