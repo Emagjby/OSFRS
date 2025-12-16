@@ -1,101 +1,162 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
 
-  onMount(async () => {
-    const { tsParticles } = await import("tsparticles-engine");
-    const { loadSlim } = await import("tsparticles-slim");
+  type Icon = {
+    baseX: number;
+    baseY: number;
+    x: number;
+    y: number;
+    speed: number;
+    phase: number;
+    scale: number;
+    opacity: number;
+    src: string;
+  };
 
-    await loadSlim(tsParticles);
+  const ICONS = [
+    "/icon1.svg",
+    "/icon2.svg",
+    "/icon3.svg",
+    "/icon4.svg",
+    "/icon5.svg",
+  ];
 
-    tsParticles.load("bg", {
-      fullScreen: { enable: false },
-      background: { color: "transparent" },
+  const GRID_SPACING = 320;
+  const JITTER_X = 40;
+  const JITTER_Y = 40;
 
-      particles: {
-        number: {
-          value: 12,
-          density: {
-            enable: true,
-            area: 1400,
-          },
-        },
+  const GRID_OFFSET_X = 0.25;
+  const GRID_OFFSET_Y = 0.25;
 
-        shape: {
-          type: "image",
-          image: [
-            {
-              src: "/icon1.svg",
-              width: 96,
-              height: 96,
-            },
-            {
-              src: "/icon2.svg",
-              width: 96,
-              height: 96,
-            },
-            {
-              src: "/icon3.svg",
-              width: 96,
-              height: 96,
-            },
-            {
-              src: "/icon4.svg",
-              width: 96,
-              height: 96,
-            },
-            {
-              src: "/icon5.svg",
-              width: 96,
-              height: 96,
-            },
-          ],
-        },
+  let root: HTMLDivElement;
 
-        size: {
-          value: 72,
-          random: {
-            enable: true,
-            minimumValue: 44,
-          },
-        },
+  let icons: Icon[] = [];
+  let raf: number | null = null;
 
-        opacity: {
-          value: 0.28,
-          random: {
-            enable: true,
-            minimumValue: 0.08,
-          },
-        },
+  const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-        move: {
-          enable: true,
-          speed: 0.2,
-          direction: "none",
-          random: false,
-          straight: false,
+  function generateIcons() {
+    const vw = window.innerWidth;
+    const docH = document.documentElement.scrollHeight;
 
-          outModes: {
-            default: "bounce",
-          },
-        },
+    if (root) {
+      root.style.height = `${docH}px`;
+    }
 
-        collisions: {
-          enable: true,
-          mode: "bounce",
-        },
-      },
+    const cols = Math.max(1, Math.floor(vw / GRID_SPACING));
+    const rows = Math.max(1, Math.floor(docH / GRID_SPACING));
 
-      detectRetina: true,
-    });
+    const result: Icon[] = [];
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const cellW = vw / cols;
+        const cellH = docH / rows;
+
+        const baseX =
+          col * cellW + cellW * GRID_OFFSET_X + rand(-JITTER_X, JITTER_X);
+
+        const baseY =
+          row * cellH + cellH * GRID_OFFSET_Y + rand(-JITTER_Y, JITTER_Y);
+
+        result.push({
+          baseX,
+          baseY,
+          x: baseX,
+          y: baseY,
+          speed: rand(0.0004, 0.001),
+          phase: Math.random() * Math.PI * 2,
+          scale: rand(0.6, 1.0),
+          opacity: rand(0.18, 0.38),
+          src: ICONS[Math.floor(Math.random() * ICONS.length)],
+        });
+      }
+    }
+
+    icons = result;
+  }
+
+  function animate(time: number) {
+    for (const icon of icons) {
+      icon.x = icon.baseX + Math.sin(time * icon.speed + icon.phase) * 12;
+      icon.y = icon.baseY + Math.cos(time * icon.speed + icon.phase) * 10;
+    }
+
+    icons = icons;
+
+    raf = window.requestAnimationFrame(animate);
+  }
+
+  onMount(() => {
+    generateIcons();
+    raf = window.requestAnimationFrame(animate);
+
+    const onResize = () => {
+      if (raf !== null) {
+        window.cancelAnimationFrame(raf);
+      }
+      generateIcons();
+      raf = window.requestAnimationFrame(animate);
+    };
+
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (raf !== null) {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  });
+
+  onDestroy(() => {
+    if (raf !== null) {
+      window.cancelAnimationFrame(raf);
+    }
   });
 </script>
 
-<div id="bg" class="fixed inset-0 z-0 pointer-events-none"></div>
+<div class="bg-root bind:this={root}">
+  {#each icons as icon}
+    <img
+      src={icon.src}
+      alt=""
+      class="bg-icon"
+      style="
+        transform:
+          translate3d({icon.x}px, {icon.y}px, 0)
+          scale({icon.scale});
+        opacity: {icon.opacity};
+      "
+      draggable="false"
+    />
+  {/each}
+</div>
 
 <style>
-  :global(#bg canvas) {
+  .bg-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-icon {
+    position: absolute;
+    width: 96px;
+    height: 96px;
     filter: blur(4px) saturate(0.75) hue-rotate(-8deg);
-    transform: scale(1.05);
-    opacity: 0.48;
+    transform-origin: center;
+    user-select: none;
+    will-change: transform;
+  }
+
+  @media (min-width: 1024px) {
+    .bg-icon {
+      width: 128px;
+      height: 128px;
+    }
   }
 </style>
