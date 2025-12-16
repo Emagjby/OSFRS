@@ -23,11 +23,11 @@
     class="my-8 flex flex-col xs:flex-row justify-around items-center gap-4 w-full xs:w-auto"
   >
     <a
-      class="flex justify-center items-center font-normal btn-neutral border-success-secondary bg-success text-md xs:text-lg px-6 py-3 w-full xs:w-auto"
+      class="flex justify-center items-center font-normal btn-neutral border-success bg-success hover:bg-success-hover text-md xs:text-lg px-6 py-3 w-full xs:w-50"
       href={href("/facilities")}>Get Started</a
     >
     <a
-      class="flex justify-center items-center font-medium btn-neutral text-md xs:text-lg px-6 py-3 w-full xs:w-auto"
+      class="flex justify-center items-center font-medium btn-neutral text-md xs:text-lg px-6 py-3 w-full xs:w-50"
       href={href("/availability")}>Browse Facilities</a
     >
   </div>
