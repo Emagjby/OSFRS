@@ -24,11 +24,12 @@
   >
     <a
       class="flex justify-center items-center font-normal btn-neutral border-success bg-success hover:bg-success-hover text-md xs:text-lg px-6 py-3 w-full xs:w-50"
-      href={href("/facilities")}>Get Started</a
+      href={href("/auth", new URLSearchParams({ mode: "register" }))}
+      >Get Started</a
     >
     <a
       class="flex justify-center items-center font-medium btn-neutral text-md xs:text-lg px-6 py-3 w-full xs:w-50"
-      href={href("/availability")}>Browse Facilities</a
+      href={href("/facilities")}>Browse Facilities</a
     >
   </div>
 </div>

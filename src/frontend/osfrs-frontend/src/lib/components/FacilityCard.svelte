@@ -37,7 +37,7 @@
 
     <a
       class="btn-neutral text-[1.05rem] text-center mt-3"
-      href={href(`/facility/${id}`)}
+      href={href(`/facilities/${id}`)}
     >
       View Availability
     </a>
