@@ -38,9 +38,11 @@
     height: 100%;
     margin: 0;
     background:
-      radial-gradient(1200px 800px at 50% 15%,
+      radial-gradient(
+        1200px 800px at 50% 15%,
         rgba(56, 189, 248, 0.18),
-        transparent 70%),
+        transparent 70%
+      ),
       linear-gradient(135deg, #0b1f33 0%, #0a1624 80%, #070d14 100%);
     background-attachment: fixed;
     overscroll-behavior: none;
@@ -117,9 +119,11 @@
     border-radius: inherit;
 
     background:
-      radial-gradient(120% 90% at 50% 0%,
+      radial-gradient(
+        120% 90% at 50% 0%,
         rgba(56, 189, 248, 0.22),
-        transparent 65%),
+        transparent 65%
+      ),
       linear-gradient(to bottom, rgba(10, 20, 35, 0.25), rgba(5, 10, 20, 0.75));
 
     opacity: 0.45;
@@ -187,5 +191,19 @@
     .facility-card {
       backdrop-filter: none;
     }
+  }
+
+  /* facility page */
+  .facility-page-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-border-soft);
+
+    background: rgba(20, 22, 26, 0.85);
+
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 }

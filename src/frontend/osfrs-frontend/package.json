@@ -38,6 +38,7 @@
     "vite": "^7.2.6"
   },
   "dependencies": {
+    "@tabler/icons-svelte": "^3.36.0",
     "@tsparticles/plugin-emitters": "^3.9.1",
     "@tsparticles/shape-image": "^3.9.1"
   }

@@ -1,18 +1,22 @@
-<script lang="ts">
-  export let active: "availability" | "gallery" | "reviews" = "gallery";
+<script lang="ts" module>
+  export type TabId = "availability" | "gallery" | "reviews";
+</script>
 
-  const tabs = [
+<script lang="ts">
+  export let active: TabId = "availability";
+
+  const tabs: { id: TabId; label: string }[] = [
     { id: "availability", label: "Availability" },
     { id: "gallery", label: "Gallery" },
     { id: "reviews", label: "Reviews" },
   ];
 
-  function setActive(id: typeof active) {
+  function setActive(id: TabId) {
     active = id;
   }
 </script>
 
-<nav class="tabs">
+<nav class="tabs justify-center sm:justify-end">
   {#each tabs as tab (tab.id)}
     <button
       class="tab"
@@ -28,7 +32,6 @@
   .tabs {
     width: 100%;
     display: flex;
-    justify-content: flex-end;
     gap: 1.25rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     padding-right: 1.25rem;
