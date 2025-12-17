@@ -173,12 +173,9 @@
     color: var(--color-unavailable);
   }
 
-  @media (max-width: 800px) {
+  @media (max-width: 768px) {
     .facility-card {
       backdrop-filter: none;
-    }
-
-    .facility-card::before {
     }
   }
 }
