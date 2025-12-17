@@ -9,6 +9,12 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<LandingNavBar />
-{@render children()}
-<Footer />
+<div class="layout">
+  <LandingNavBar />
+
+  <main class="content">
+    {@render children()}
+  </main>
+
+  <Footer />
+</div>

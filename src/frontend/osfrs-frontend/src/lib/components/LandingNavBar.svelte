@@ -11,7 +11,7 @@
 
   <div class="flex flex-row gap-4" id="right-navbar">
     <a
-      class="btn-neutral bg-login-fill"
+      class="btn-neutral bg-bg-login"
       href={href("/auth", new URLSearchParams({ mode: "login" }))}>Login</a
     >
     <a
