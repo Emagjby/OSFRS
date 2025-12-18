@@ -39,9 +39,7 @@
       </div>
       <div>
         {#if mockData.incomingMaintenences.length}
-          <p
-            class="flex items-center justify-center cursor-pointer gap-2 m-8 text-warning font-semibold"
-          >
+          <p class="incoming-maintenance">
             <IconAlertTriangleFilled size="1.5rem" />
             Incoming Maintenance!
           </p>
@@ -58,3 +56,24 @@
     {/if}
   </div>
 </main>
+
+<style>
+  .incoming-maintenance {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    gap: 0.5rem;
+    margin: 2rem;
+    color: #f5930b;
+    font-weight: var(--font-weight-semibold);
+
+    transition: transform 220ms ease;
+
+    will-change: transform;
+  }
+
+  .incoming-maintenance:hover {
+    transform: scale(1.02);
+  }
+</style>
