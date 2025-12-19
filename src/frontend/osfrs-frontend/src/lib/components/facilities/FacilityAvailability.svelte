@@ -1,56 +1,59 @@
 <script lang="ts">
+  import {
+    IconCalendarEvent,
+    IconChevronLeft,
+    IconChevronRight,
+  } from "@tabler/icons-svelte";
   import { SvelteDate } from "svelte/reactivity";
-  import { IconCalendarEvent } from "@tabler/icons-svelte";
-  import { onMount } from "svelte";
 
   type SlotStatus = "available" | "booked" | "maintenance";
   type Slot = { id: number; time: string; status: SlotStatus };
 
-  export let anchorDate = new SvelteDate();
+  let anchorDate = new SvelteDate();
+  let pickerOpen = $state(false);
+  let calendarBtn: HTMLButtonElement | null = $state(null);
+  let popX = $state(0);
+  let popY = $state(0);
+  let visibleCount = $state(3);
 
-  let pickerOpen = false;
-  let calendarBtn: HTMLButtonElement | null = null;
-  let popX = 0;
-  let popY = 0;
+  $effect(() => {
+    const update = () => {
+      if (window.matchMedia("(max-width: 767px)").matches) visibleCount = 1;
+      else if (window.matchMedia("(max-width: 1023px)").matches)
+        visibleCount = 2;
+      else visibleCount = 3;
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  });
 
-  let visibleCount = 3;
+  const baseDate = $derived.by(() => {
+    const d = new SvelteDate(anchorDate.getTime());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
-  function updateVisibleCount() {
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      visibleCount = 1;
-    } else if (window.matchMedia("(max-width: 1023px)").matches) {
-      visibleCount = 2;
-    } else {
-      visibleCount = 3;
-    }
-  }
-
-  onMount(() => {
-    updateVisibleCount();
-    window.addEventListener("resize", updateVisibleCount);
-    return () => window.removeEventListener("resize", updateVisibleCount);
+  const days = $derived.by(() => {
+    const b = baseDate;
+    if (visibleCount === 1) return [b];
+    if (visibleCount === 2) return [b, addDays(b, 1)];
+    return [addDays(b, -1), b, addDays(b, 1)];
   });
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
-  const toISO = (d: Date) =>
+
+  const toISO = (d: SvelteDate) =>
     `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
-  function addDays(d: Date, n: number) {
-    const x = new SvelteDate(d);
+  function addDays(d: SvelteDate, n: number) {
+    const x = new SvelteDate(d.getTime());
     x.setDate(x.getDate() + n);
     return x;
   }
 
-  $: baseDate = new Date(anchorDate.setHours(0, 0, 0, 0));
-  $: days = (() => {
-    if (visibleCount === 1) {
-      return [baseDate];
-    }
-    if (visibleCount === 2) {
-      return [baseDate, addDays(baseDate, 1)];
-    }
-    return [addDays(baseDate, -1), baseDate, addDays(baseDate, 1)];
-  })();
+  const toCapitalFirst = (str: string) =>
+    str.length ? str[0].toUpperCase() + str.slice(1) : str;
 
   const times = [
     "9:00 AM",
@@ -64,8 +67,6 @@
     "5:00 PM",
   ];
 
-  const toCapitalFirst = (s: string) => s && s[0].toUpperCase() + s.slice(1);
-
   function slotsFor(): Slot[] {
     return times.map((t, i) => {
       if (i % 5 === 0) return { id: i, time: t, status: "maintenance" };
@@ -75,7 +76,7 @@
   }
 
   function shift(direction: number) {
-    anchorDate = addDays(anchorDate, direction * visibleCount);
+    anchorDate.setDate(anchorDate.getDate() + direction * visibleCount);
     pickerOpen = false;
   }
 
@@ -92,7 +93,7 @@
     const v = (e.target as HTMLInputElement).value;
     if (!v) return;
     const [y, m, d] = v.split("-").map(Number);
-    anchorDate = new SvelteDate(y, m - 1, d);
+    anchorDate.setFullYear(y, m - 1, d);
     pickerOpen = false;
   }
 </script>
@@ -100,17 +101,22 @@
 <div class="calendar-root">
   <div class="calendar-card">
     <div class="nav">
-      <button class="iconbtn" on:click={() => shift(-1)}>←</button>
+      <button class="iconbtn" onclick={() => shift(-1)} aria-label="Previous"
+        ><IconChevronLeft size="1rem" /></button
+      >
 
       <button
         class="iconbtn calbtn"
         bind:this={calendarBtn}
-        on:click={togglePicker}
+        onclick={togglePicker}
+        aria-label="Open Calendar"
       >
         <IconCalendarEvent size="1rem" />
       </button>
 
-      <button class="iconbtn" on:click={() => shift(1)}>→</button>
+      <button class="iconbtn" onclick={() => shift(1)} aria-label="Next"
+        ><IconChevronRight size="1rem" /></button
+      >
     </div>
 
     <div class="h-divider"></div>
@@ -119,7 +125,7 @@
       class="grid"
       style="grid-template-columns: repeat({visibleCount}, 1fr)"
     >
-      {#each days as d, i}
+      {#each days as d (d.getTime())}
         <section class="day">
           <header class="dayhead p-4">
             <div class="weekday">
@@ -147,7 +153,7 @@
             {/each}
           </div>
 
-          {#if i < visibleCount - 1}
+          {#if days.indexOf(d) < visibleCount - 1}
             <div class="divider"></div>
           {/if}
         </section>
@@ -157,7 +163,7 @@
 
   {#if pickerOpen}
     <div class="popover" style="left:{popX}px; top:{popY}px">
-      <input type="date" value={toISO(baseDate)} on:change={pick} />
+      <input type="date" value={toISO(baseDate)} onchange={pick} />
     </div>
   {/if}
 </div>
@@ -166,6 +172,7 @@
   .calendar-root {
     position: relative;
     width: 100%;
+    font-family: sans-serif;
   }
 
   .calendar-card {
@@ -195,32 +202,15 @@
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.06),
       0 6px 16px rgba(0, 0, 0, 0.4);
+    transition: border-color 220ms ease;
+  }
+
+  .iconbtn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
   }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (max-width: 767px) {
-    .grid {
-      grid-template-columns: 1fr;
-    }
-
-    .day[data-index="0"],
-    .day[data-index="2"] {
-      display: none;
-    }
-  }
-
-  @media (min-width: 768px) and (max-width: 1023px) {
-    .grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .day[data-index="0"] {
-      display: none;
-    }
   }
 
   .day {
@@ -250,6 +240,10 @@
       rgba(255, 255, 255, 0.1),
       transparent
     );
+  }
+
+  .dayhead {
+    text-align: center;
   }
 
   .weekday {
@@ -310,7 +304,7 @@
   }
 
   .booked {
-    background: rgba(200, 62, 72, 0.42); /* deeper red */
+    background: rgba(200, 62, 72, 0.42);
     color: rgba(255, 225, 230, 0.95);
   }
 
@@ -327,5 +321,14 @@
     border-radius: 12px;
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: 100;
+  }
+
+  .p-2 {
+    padding: 0.5rem;
+  }
+
+  .p-4 {
+    padding: 1rem;
   }
 </style>
