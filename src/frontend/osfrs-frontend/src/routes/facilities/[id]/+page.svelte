@@ -4,6 +4,7 @@
   } from "$lib/components/facilities/FacilityTabs.svelte";
   import FacilityAvailability from "$lib/components/facilities/FacilityAvailability.svelte";
   import FacilityGallery from "$lib/components/facilities/FacilityGallery.svelte";
+  import FacilityReviews from "$lib/components/facilities/FacilityReviews.svelte";
   import { IconAlertTriangleFilled } from "@tabler/icons-svelte";
 
   let activeTab: TabId = "availability";
@@ -23,7 +24,7 @@
   };
 </script>
 
-<main class="max-w-6xl m-auto p-4">
+<main class="max-w-6xl mx-auto my-8 p-4">
   <div class="facility-page-card flex flex-col">
     <div id="facility-top" class="flex flex-col sm:flex-row justify-between">
       <div id="facility-top-left">
@@ -52,7 +53,7 @@
     {:else if activeTab === "gallery"}
       <FacilityGallery />
     {:else}
-      <p>reviews</p>
+      <FacilityReviews />
     {/if}
   </div>
 </main>
