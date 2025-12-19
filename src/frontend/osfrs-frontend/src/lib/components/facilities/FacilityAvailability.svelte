@@ -15,6 +15,7 @@
   let popX = $state(0);
   let popY = $state(0);
   let visibleCount = $state(3);
+  let showAll = $state(false);
 
   $effect(() => {
     const update = () => {
@@ -56,8 +57,8 @@
     str.length ? str[0].toUpperCase() + str.slice(1) : str;
 
   const times = [
-    "9:00 AM",
-    "10:00 AM",
+    "9:00",
+    "10:00",
     "11:00 AM",
     "12:00 PM",
     "1:00 PM",
@@ -65,7 +66,19 @@
     "3:00 PM",
     "4:00 PM",
     "5:00 PM",
+    "6:00 PM",
+    "7:00 PM",
+    "8:00 PM",
+    "9:00 PM",
   ];
+
+  const BASE_VISIBLE_SLOTS = 6;
+
+  const allSlots = $derived.by(() => slotsFor());
+
+  const visibleSlots = $derived.by(() =>
+    showAll ? allSlots : allSlots.slice(0, BASE_VISIBLE_SLOTS),
+  );
 
   function slotsFor(): Slot[] {
     return times.map((t, i) => {
@@ -143,7 +156,7 @@
           <div class="h-divider"></div>
 
           <div class="slots p-2">
-            {#each slotsFor() as s (s.id)}
+            {#each visibleSlots as s (s.id)}
               <div class="slot">
                 <span class="time">{s.time}</span>
                 <span class="pill {s.status}">
@@ -158,6 +171,11 @@
           {/if}
         </section>
       {/each}
+    </div>
+    <div class="show-more-wrap">
+      <button class="show-more-btn" onclick={() => (showAll = !showAll)}>
+        {showAll ? "Show less" : "Show more"}
+      </button>
     </div>
   </div>
 
@@ -191,7 +209,7 @@
   .iconbtn {
     height: 2.1rem;
     width: 2.1rem;
-    border-radius: 10px;
+    border-radius: 0.5rem;
     background: rgba(22, 26, 36, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(235, 240, 250, 0.9);
@@ -247,13 +265,13 @@
   }
 
   .weekday {
-    font-size: 18px;
+    font-size: 1.2rem;
     font-weight: 600;
     color: rgba(240, 245, 255, 0.92);
   }
 
   .date {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: rgba(180, 190, 210, 0.6);
   }
 
@@ -262,8 +280,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.45rem 0.85rem;
-    margin-top: 6px;
-    border-radius: 10px;
+    margin-top: 0.5rem;
+    border-radius: 0.75rem;
     background: linear-gradient(
       180deg,
       rgba(14, 18, 26, 0.4),
@@ -276,7 +294,7 @@
 
   .time {
     color: rgba(230, 235, 245, 0.85);
-    font-size: 13px;
+    font-size: 0.8rem;
   }
 
   .pill {
@@ -286,7 +304,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.15px;
     user-select: none;
@@ -318,8 +336,8 @@
     transform: translateX(-50%);
     background: rgba(18, 22, 32, 0.9);
     backdrop-filter: blur(12px);
-    border-radius: 12px;
-    padding: 10px;
+    border-radius: 0.75rem;
+    padding: 0.6rem;
     border: 1px solid rgba(255, 255, 255, 0.18);
     z-index: 100;
   }
@@ -330,5 +348,33 @@
 
   .p-4 {
     padding: 1rem;
+  }
+
+  .show-more-wrap {
+    padding: 0.75rem 1rem 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .show-more-btn {
+    background: rgba(22, 26, 36, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: rgba(235, 240, 250, 0.9);
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 6px 16px rgba(0, 0, 0, 0.45);
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .show-more-btn:hover {
+    transform: scale(1.03);
+    border-color: rgba(255, 255, 255, 0.3);
   }
 </style>

@@ -3,6 +3,7 @@
     type TabId,
   } from "$lib/components/facilities/FacilityTabs.svelte";
   import FacilityAvailability from "$lib/components/facilities/FacilityAvailability.svelte";
+  import FacilityGallery from "$lib/components/facilities/FacilityGallery.svelte";
   import { IconAlertTriangleFilled } from "@tabler/icons-svelte";
 
   let activeTab: TabId = "availability";
@@ -12,7 +13,6 @@
     name: "Kristal",
     type: "Gym",
     status: "Available",
-    src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkarA_0L4R1NYltv8EEyaeKBoIA53bzLJFxg&s",
     incomingMaintenences: [
       {
         start: new Date(),
@@ -50,7 +50,7 @@
     {#if activeTab === "availability"}
       <FacilityAvailability />
     {:else if activeTab === "gallery"}
-      <p>galerry</p>
+      <FacilityGallery />
     {:else}
       <p>reviews</p>
     {/if}
