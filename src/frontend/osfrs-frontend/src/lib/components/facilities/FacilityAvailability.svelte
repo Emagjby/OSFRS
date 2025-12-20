@@ -5,7 +5,7 @@
     IconChevronRight,
   } from "@tabler/icons-svelte";
   import { SvelteDate } from "svelte/reactivity";
-
+  import { href } from "$lib/nav";
   type SlotStatus = "available" | "booked" | "maintenance";
   type Slot = { id: number; time: string; status: SlotStatus };
 
@@ -159,9 +159,9 @@
             {#each visibleSlots as s (s.id)}
               <div class="slot">
                 <span class="time">{s.time}</span>
-                <span class="pill {s.status}">
+                <a href={href("/auth?mode=register")} class="pill {s.status}">
                   {toCapitalFirst(s.status)}
-                </span>
+                </a>
               </div>
             {/each}
           </div>

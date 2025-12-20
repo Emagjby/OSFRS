@@ -40,6 +40,9 @@
   "dependencies": {
     "@tabler/icons-svelte": "^3.36.0",
     "@tsparticles/plugin-emitters": "^3.9.1",
-    "@tsparticles/shape-image": "^3.9.1"
+    "@tsparticles/shape-image": "^3.9.1",
+    "bits-ui": "^2.14.4",
+    "tailwind-merge": "^3.4.0",
+    "tailwind-variants": "^3.2.2"
   }
 }
