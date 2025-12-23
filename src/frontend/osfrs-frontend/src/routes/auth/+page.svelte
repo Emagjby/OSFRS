@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import LoginForm from "$lib/components/auth/LoginForm.svelte";
+  import RegisterForm from "$lib/components/auth/RegisterForm.svelte";
   import { href } from "$lib/nav";
+
+  const mode = $derived(page.url.searchParams.get("mode") ?? "login");
 </script>
 
 <div class="min-h-svh">
@@ -15,7 +19,6 @@
     >
       <div
         class="pointer-events-none absolute inset-0 opacity-[0.08] mix-blend-overlay"
-        style="background-image: url('/noise.png'); background-size: 280px 280px;"
       ></div>
 
       <div class="relative flex justify-center gap-2 md:justify-start">
@@ -37,7 +40,11 @@
       p-8
     "
         >
-          <LoginForm />
+          {#if mode === "register"}
+            <RegisterForm />
+          {:else}
+            <LoginForm />
+          {/if}
         </div>
       </div>
     </div>
@@ -64,10 +71,18 @@
       <div class="absolute inset-0 flex items-center">
         <div class="px-14">
           <p class="text-white/85 text-3xl font-semibold leading-tight">
-            Welcome back.
+            {#if mode === "register"}
+              Get started.
+            {:else}
+              Welcome back.
+            {/if}
           </p>
           <p class="mt-2 text-white/60 text-lg">
-            Reserve a sports facility that meets your needs in no time.
+            {#if mode === "register"}
+              Find and reserve the perfect sports facility, faster than ever.
+            {:else}
+              Reserve a sports facility that meets your needs in no time.
+            {/if}
           </p>
         </div>
       </div>

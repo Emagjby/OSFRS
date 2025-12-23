@@ -25,12 +25,20 @@
 >
   <FieldGroup>
     <div class="flex flex-col items-center gap-1 text-center">
-      <h1 class="text-2xl font-bold">Sign in to your account</h1>
+      <h1 class="text-2xl font-bold">Create your account</h1>
       <p class="text-muted-foreground text-sm text-balance">
-        Use your email and password to continue.
+        Use your email and password to get started.
       </p>
     </div>
-    <Field>
+    <Field class="-mb-2">
+      <FieldLabel for="name-{id}">Name</FieldLabel>
+      <Input id="name-{id}" type="text" placeholder="John Doe" required />
+    </Field>
+    <Field class="-mb-2">
+      <FieldLabel for="username-{id}">Username</FieldLabel>
+      <Input id="username-{id}" type="text" placeholder="johndoe" required />
+    </Field>
+    <Field class="-mb-2">
       <FieldLabel for="email-{id}">Email</FieldLabel>
       <Input
         id="email-{id}"
@@ -42,26 +50,20 @@
     <Field>
       <div class="flex items-center">
         <FieldLabel for="password-{id}">Password</FieldLabel>
-        <a
-          href={href("/auth/reset-password")}
-          class="ms-auto text-sm text-white/60 hover:text-white/80 underline-offset-4 hover:underline"
-        >
-          Forgot your password?
-        </a>
       </div>
       <Input id="password-{id}" type="password" required />
     </Field>
     <Field>
       <button
         class="btn-neutral w-full bg-[#f6f0ffe9] hover:bg-[#f6f0ff] font-semibold text-[#2f2f43] cursor-pointer"
-        type="submit">Login</button
+        type="submit">Register</button
       >
     </Field>
     <FieldSeparator />
     <FieldDescription class="text-center">
-      Don't have an account?
-      <a href={href("/auth?mode=register")} class="underline underline-offset-4"
-        >Sign up</a
+      Already have an account?
+      <a href={href("/auth?mode=login")} class="underline underline-offset-4"
+        >Sign in.</a
       >
     </FieldDescription>
   </FieldGroup>
