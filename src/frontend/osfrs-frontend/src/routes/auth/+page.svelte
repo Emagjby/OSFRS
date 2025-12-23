@@ -62,7 +62,7 @@
       />
 
       <div
-        class="absolute inset-0 bg-gradient-to-br from-[#081220]/70 via-[#081220]/45 to-black/75"
+        class="absolute inset-0 bg-linear-to-br from-[#081220]/70 via-[#081220]/45 to-black/75"
       ></div>
       <div
         class="absolute inset-0 bg-[radial-gradient(900px_circle_at_30%_20%,rgba(70,140,185,0.18),transparent_60%)]"
