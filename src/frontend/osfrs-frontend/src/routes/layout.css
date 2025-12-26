@@ -204,10 +204,20 @@
   }
 
   /* app */
-  .app-shell {
-    display: grid;
-    grid-template-columns: 260px 1fr;
-    min-height: 100vh;
+  @media (min-width: 1024px) {
+    .app-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .app-shell {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      min-height: 100vh;
+    }
   }
 
   .sidebar {
@@ -217,5 +227,31 @@
   .content {
     padding: 1.5rem;
     overflow: auto;
+  }
+
+  .tooltip {
+    position: absolute;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--color-border-soft);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  }
+
+  .tooltip-arrow {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    transform: rotate(45deg);
+    border-left: 1px solid var(--color-border-soft);
+    border-bottom: 1px solid var(--color-border-soft);
   }
 }
