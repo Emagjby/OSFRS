@@ -18,7 +18,7 @@
   <a href={href("/app")} class="text-3xl font-semibold pt-7 pb-10 tracking-wide"
     >OSFRS</a
   >
-  <div class="sidenav gap-2 w-[95%] h-[75vh] flex flex-col justify-start">
+  <div class="sidenav gap-2 w-[95%] h-[50%] flex flex-col justify-start">
     {#if path === "/app/(app)"}
       <a class="active-path" href={href("/app")}
         ><IconHomeFilled size="1.5rem" /> Home</a
@@ -70,7 +70,7 @@
     >OSFRS</a
   >
   <div
-    class="sidenav gap-2 w-[95%] h-[75vh] flex flex-col justify-start items-center"
+    class="sidenav gap-2 w-[95%] h-[50%] flex flex-col justify-start items-center"
   >
     {#if path === "/app/(app)"}
       <a
